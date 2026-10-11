@@ -8,6 +8,7 @@ any in-progress entity context (e.g., the last looked-up order ID).
 
 import uuid
 import time
+import asyncio
 from dataclasses import dataclass, field
 from typing import Optional
 
@@ -27,21 +28,25 @@ class Session:
     """
     Full state for one user session.
 
-    history      — ordered list of Turn objects (user/assistant alternating)
-    active_intent — last detected intent: PRODUCT_QUERY | ORDER_TRACKING |
-                    RETURNS_POLICY | OUT_OF_SCOPE | None (not yet determined)
-    last_order_id — most recently looked-up order ID (for follow-up turns)
-    last_sku      — most recently referenced product SKU (for follow-up turns)
-    created_at    — epoch timestamp of session creation
-    last_active   — epoch timestamp of most recent activity (for TTL cleanup)
+    history              — ordered list of Turn objects (user/assistant alternating)
+    active_intent        — last detected intent: PRODUCT_QUERY | ORDER_TRACKING |
+                           RETURNS_POLICY | OUT_OF_SCOPE | None (not yet determined)
+    last_order_id        — most recently looked-up order ID (for follow-up turns)
+    last_sku             — most recently referenced product SKU (for follow-up turns)
+    conversation_summary — running summary of older turns (for context window management)
+    created_at           — epoch timestamp of session creation
+    last_active          — epoch timestamp of most recent activity (for TTL cleanup)
     """
-    session_id:    str   = field(default_factory=lambda: str(uuid.uuid4()))
-    history:       list  = field(default_factory=list)
-    active_intent: Optional[str] = None
-    last_order_id: Optional[str] = None
-    last_sku:      Optional[str] = None
-    created_at:    float = field(default_factory=time.time)
-    last_active:   float = field(default_factory=time.time)
+    session_id:           str   = field(default_factory=lambda: str(uuid.uuid4()))
+    history:              list  = field(default_factory=list)
+    active_intent:        Optional[str] = None
+    last_order_id:        Optional[str] = None
+    last_sku:             Optional[str] = None
+    conversation_summary: Optional[str] = None
+    summarized_turn_count: int = 0
+    lock: asyncio.Lock = field(default_factory=asyncio.Lock, repr=False)
+    created_at:           float = field(default_factory=time.time)
+    last_active:          float = field(default_factory=time.time)
 
     def add_turn(self, role: str, content: str) -> None:
         self.history.append(Turn(role=role, content=content))
@@ -56,6 +61,8 @@ class Session:
         self.active_intent = None
         self.last_order_id = None
         self.last_sku      = None
+        self.conversation_summary = None
+        self.summarized_turn_count = 0
         self.last_active   = time.time()
 
 

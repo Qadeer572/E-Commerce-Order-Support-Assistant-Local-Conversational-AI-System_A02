@@ -11,21 +11,23 @@ this project's file-based data layer, with no new dependency.
 
 import json
 import threading
+import time
 from typing import Optional
 
 from backend.config import HISTORY_FILE
 
-_lock = threading.Lock()
+_lock = threading.RLock()
 
 
 def _read_all() -> dict:
-    if not HISTORY_FILE.exists():
-        return {}
-    try:
-        with open(HISTORY_FILE, "r", encoding="utf-8") as f:
-            return json.load(f)
-    except (json.JSONDecodeError, OSError):
-        return {}
+    with _lock:
+        if not HISTORY_FILE.exists():
+            return {}
+        try:
+            with open(HISTORY_FILE, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except (json.JSONDecodeError, OSError):
+            return {}
 
 
 def _write_all(data: dict) -> None:
@@ -33,7 +35,14 @@ def _write_all(data: dict) -> None:
     tmp_file = HISTORY_FILE.with_suffix(".tmp")
     with open(tmp_file, "w", encoding="utf-8") as f:
         json.dump(data, f, indent=2)
-    tmp_file.replace(HISTORY_FILE)
+    for attempt in range(5):
+        try:
+            tmp_file.replace(HISTORY_FILE)
+            return
+        except PermissionError:
+            if attempt == 4:
+                raise
+            time.sleep(.01 * (attempt + 1))
 
 
 def _make_title(history: list) -> str:
@@ -53,6 +62,8 @@ def save_session(session) -> None:
             "title": _make_title(session.history),
             "created_at": session.created_at,
             "last_active": session.last_active,
+            "state": {key: getattr(session, key) for key in (
+                "active_intent", "last_order_id", "last_sku", "conversation_summary", "summarized_turn_count")},
             "messages": [
                 {"role": t.role, "content": t.content, "timestamp": t.timestamp}
                 for t in session.history
@@ -94,3 +105,19 @@ def delete_session(session_id: str) -> bool:
             _write_all(data)
             return True
         return False
+
+
+def restore_session(session) -> bool:
+    """Hydrate legacy transcripts and current memory metadata."""
+    from backend.conversation_manager.session import Turn
+    with _lock:
+        entry = _read_all().get(session.session_id)
+    if not entry:
+        return False
+    session.history = [Turn(m["role"], m["content"], m.get("timestamp", 0)) for m in entry["messages"]]
+    for key, value in entry.get("state", {}).items():
+        if key in ("active_intent", "last_order_id", "last_sku", "conversation_summary", "summarized_turn_count"):
+            setattr(session, key, value)
+    session.summarized_turn_count = max(0, min(session.summarized_turn_count, len(session.history)))
+    session.created_at = entry.get("created_at", session.created_at)
+    return True

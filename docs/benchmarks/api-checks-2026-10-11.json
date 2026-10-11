@@ -1,0 +1,19 @@
+{
+  "health": {
+    "status": "ok",
+    "service": "ShopBot",
+    "active_sessions": 0,
+    "llm": {
+      "status": "ok",
+      "model": "qwen2.5:0.5b",
+      "available": true,
+      "ollama_host": "http://localhost:11434"
+    },
+    "rag": {
+      "ready": true
+    }
+  },
+  "static_serving": "passed",
+  "history_read_reset_delete": "passed",
+  "rendered_browser": "unavailable"
+}

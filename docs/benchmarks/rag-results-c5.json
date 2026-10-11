@@ -1,0 +1,1666 @@
+{
+  "hardware": {
+    "platform": "Windows-11-10.0.26200-SP0",
+    "processor": "Intel64 Family 6 Model 154 Stepping 4, GenuineIntel",
+    "cpu_name": "12th Gen Intel(R) Core(TM) i5-1245U",
+    "logical_processors": 12
+  },
+  "versions": {
+    "torch": "2.6.0",
+    "sentence-transformers": "3.4.1",
+    "transformers": "4.48.3",
+    "chromadb": "1.0.20"
+  },
+  "revisions": {
+    "embedding": {
+      "model": "sentence-transformers/all-MiniLM-L6-v2",
+      "revision": "1110a243fdf4706b3f48f1d95db1a4f5529b4d41"
+    },
+    "tokenizer": {
+      "model": "Qwen/Qwen2.5-1.5B-Instruct",
+      "revision": "989aa7980e4cf806f80c7fef2b1adb7bc71aa306"
+    }
+  },
+  "index_revision": "311303e51a99be5862072961b881455e30741fdefb2dd1ed78a696aeb27e30ef",
+  "documents": 60,
+  "chunks": 152,
+  "top_k": 3,
+  "threshold": 0.4,
+  "concurrency": 5,
+  "iterations": 100,
+  "cold_load_ms": 3788.4264000458643,
+  "retrieval": {
+    "uncached": {
+      "count": 100,
+      "p50_ms": 29.027200012933463,
+      "p95_ms": 41.865329997381195
+    },
+    "cached": {
+      "count": 100,
+      "p50_ms": 0.001400010660290718,
+      "p95_ms": 0.004799925955012441
+    }
+  },
+  "last_uncached_components": {
+    "queue_ms": 30.434099957346916,
+    "embedding_ms": 8.561900001950562,
+    "search_ms": 1.2286999262869358
+  },
+  "quality": [
+    {
+      "query": "ProSound X1 ANC and Bluetooth version",
+      "expected": [
+        "ELEC-001"
+      ],
+      "sources": [
+        "ELEC-001",
+        "faq-ELEC-001"
+      ],
+      "status": "ok",
+      "correct": true
+    },
+    {
+      "query": "VoltCharge USB-A and USB-C ports",
+      "expected": [
+        "ELEC-002"
+      ],
+      "sources": [
+        "ELEC-002",
+        "faq-ELEC-002"
+      ],
+      "status": "ok",
+      "correct": true
+    },
+    {
+      "query": "ClearView autofocus microphone specs",
+      "expected": [
+        "ELEC-003"
+      ],
+      "sources": [
+        "ELEC-003",
+        "faq-ELEC-003"
+      ],
+      "status": "ok",
+      "correct": true
+    },
+    {
+      "query": "PixelTab storage capacity and Android version",
+      "expected": [
+        "ELEC-004"
+      ],
+      "sources": [
+        "ELEC-004",
+        "faq-ELEC-004"
+      ],
+      "status": "ok",
+      "correct": true
+    },
+    {
+      "query": "UrbanFit Classic shirt available sizes",
+      "expected": [
+        "APRL-001"
+      ],
+      "sources": [
+        "APRL-001",
+        "faq-APRL-001"
+      ],
+      "status": "ok",
+      "correct": true
+    },
+    {
+      "query": "TrailBlazer jacket fabric and care",
+      "expected": [
+        "APRL-002"
+      ],
+      "sources": [
+        "APRL-002",
+        "faq-APRL-002"
+      ],
+      "status": "ok",
+      "correct": true
+    },
+    {
+      "query": "FlexRun athletic shorts sizes and price",
+      "expected": [
+        "APRL-003"
+      ],
+      "sources": [
+        "APRL-003",
+        "faq-APRL-003"
+      ],
+      "status": "ok",
+      "correct": true
+    },
+    {
+      "query": "CalmBreeze S300 filters",
+      "expected": [
+        "HOME-001"
+      ],
+      "sources": [
+        "HOME-001",
+        "faq-HOME-001"
+      ],
+      "status": "ok",
+      "correct": true
+    },
+    {
+      "query": "BrewMaster pour-over capacity",
+      "expected": [
+        "HOME-002"
+      ],
+      "sources": [
+        "HOME-002",
+        "faq-HOME-002"
+      ],
+      "status": "ok",
+      "correct": true
+    },
+    {
+      "query": "NightOwl desk light color temperatures",
+      "expected": [
+        "HOME-003"
+      ],
+      "sources": [
+        "HOME-003",
+        "faq-HOME-003"
+      ],
+      "status": "ok",
+      "correct": true
+    },
+    {
+      "query": "IronGrip dumbbell adjustable weights",
+      "expected": [
+        "SPRT-001"
+      ],
+      "sources": [
+        "SPRT-001",
+        "faq-SPRT-001"
+      ],
+      "status": "ok",
+      "correct": true
+    },
+    {
+      "query": "ZenFlow yoga mat dimensions",
+      "expected": [
+        "SPRT-002"
+      ],
+      "sources": [
+        "SPRT-002",
+        "faq-SPRT-002"
+      ],
+      "status": "ok",
+      "correct": true
+    },
+    {
+      "query": "Deep Work paperback page count",
+      "expected": [
+        "BOOK-001"
+      ],
+      "sources": [
+        "BOOK-001",
+        "faq-BOOK-001"
+      ],
+      "status": "ok",
+      "correct": true
+    },
+    {
+      "query": "Atomic Habits hardcover price",
+      "expected": [
+        "BOOK-002"
+      ],
+      "sources": [
+        "BOOK-002",
+        "faq-BOOK-002"
+      ],
+      "status": "ok",
+      "correct": true
+    },
+    {
+      "query": "SlimShield phone case colors",
+      "expected": [
+        "ACC-001"
+      ],
+      "sources": [
+        "ACC-001",
+        "faq-ACC-001"
+      ],
+      "status": "ok",
+      "correct": true
+    },
+    {
+      "query": "CablePro USB-C charging power",
+      "expected": [
+        "ACC-002"
+      ],
+      "sources": [
+        "ACC-002",
+        "ELEC-002",
+        "faq-ACC-002",
+        "faq-ELEC-002"
+      ],
+      "status": "ok",
+      "correct": true
+    },
+    {
+      "query": "SoundBar Mini Bluetooth speaker battery",
+      "expected": [
+        "ELEC-005"
+      ],
+      "sources": [
+        "ELEC-005",
+        "faq-ELEC-005"
+      ],
+      "status": "ok",
+      "correct": true
+    },
+    {
+      "query": "SmartPlug Mini maximum load and voice assistants",
+      "expected": [
+        "HOME-004"
+      ],
+      "sources": [
+        "HOME-004",
+        "faq-HOME-004"
+      ],
+      "status": "ok",
+      "correct": true
+    },
+    {
+      "query": "Where is ORD-10013?",
+      "expected": [
+        "ORD-10013"
+      ],
+      "sources": [
+        "ORD-10013"
+      ],
+      "status": "ok",
+      "correct": true
+    },
+    {
+      "query": "How long does a refund take?",
+      "expected": [
+        "refunds"
+      ],
+      "sources": [
+        "refunds",
+        "returns"
+      ],
+      "status": "ok",
+      "correct": true
+    },
+    {
+      "query": "Explain quantum gravity",
+      "expected": [],
+      "sources": [],
+      "status": "no_match",
+      "correct": true
+    },
+    {
+      "query": "What is the population of Japan?",
+      "expected": [],
+      "sources": [],
+      "status": "no_match",
+      "correct": true
+    },
+    {
+      "query": "Write Java code to sort numbers",
+      "expected": [],
+      "sources": [],
+      "status": "no_match",
+      "correct": true
+    },
+    {
+      "query": "Translate a French poem",
+      "expected": [],
+      "sources": [],
+      "status": "no_match",
+      "correct": true
+    },
+    {
+      "query": "Recommend investments",
+      "expected": [],
+      "sources": [],
+      "status": "no_match",
+      "correct": true
+    },
+    {
+      "query": "What causes thunderstorms?",
+      "expected": [],
+      "sources": [],
+      "status": "no_match",
+      "correct": true
+    },
+    {
+      "query": "How to grow tomatoes?",
+      "expected": [],
+      "sources": [],
+      "status": "no_match",
+      "correct": true
+    },
+    {
+      "query": "Who invented calculus?",
+      "expected": [],
+      "sources": [],
+      "status": "no_match",
+      "correct": true
+    },
+    {
+      "query": "How far away is Mars?",
+      "expected": [],
+      "sources": [],
+      "status": "no_match",
+      "correct": true
+    },
+    {
+      "query": "Where is ORD-54321?",
+      "expected": [],
+      "sources": [],
+      "status": "no_match",
+      "correct": true
+    }
+  ],
+  "quality_correct": 30,
+  "quality_total": 30,
+  "records": [
+    {
+      "elapsed_ms": 17.626899993047118,
+      "cache_hit": false,
+      "status": "ok",
+      "queue_ms": 0.23300002794712782,
+      "embedding_ms": 13.931499910540879,
+      "search_ms": 2.2233000490814447
+    },
+    {
+      "elapsed_ms": 17.593199969269335,
+      "cache_hit": false,
+      "status": "ok",
+      "queue_ms": 0.5563999293372035,
+      "embedding_ms": 13.79070000257343,
+      "search_ms": 2.571700024418533
+    },
+    {
+      "elapsed_ms": 32.79379999730736,
+      "cache_hit": false,
+      "status": "ok",
+      "queue_ms": 16.428999952040613,
+      "embedding_ms": 13.296599965542555,
+      "search_ms": 2.83440004568547
+    },
+    {
+      "elapsed_ms": 32.75050001684576,
+      "cache_hit": false,
+      "status": "ok",
+      "queue_ms": 16.951600089669228,
+      "embedding_ms": 12.503499980084598,
+      "search_ms": 2.3032999597489834
+    },
+    {
+      "elapsed_ms": 43.087400030344725,
+      "cache_hit": false,
+      "status": "ok",
+      "queue_ms": 31.802500016056,
+      "embedding_ms": 9.385299985297024,
+      "search_ms": 1.6780999721959233
+    },
+    {
+      "elapsed_ms": 0.005999929271638393,
+      "cache_hit": true,
+      "status": "ok"
+    },
+    {
+      "elapsed_ms": 0.002900022082030773,
+      "cache_hit": true,
+      "status": "ok"
+    },
+    {
+      "elapsed_ms": 0.001600012183189392,
+      "cache_hit": true,
+      "status": "ok"
+    },
+    {
+      "elapsed_ms": 0.00100000761449337,
+      "cache_hit": true,
+      "status": "ok"
+    },
+    {
+      "elapsed_ms": 0.000800006091594696,
+      "cache_hit": true,
+      "status": "ok"
+    },
+    {
+      "elapsed_ms": 15.65760001540184,
+      "cache_hit": false,
+      "status": "ok",
+      "queue_ms": 0.11899997480213642,
+      "embedding_ms": 12.034900020807981,
+      "search_ms": 2.1675999742001295
+    },
+    {
+      "elapsed_ms": 15.63110004644841,
+      "cache_hit": false,
+      "status": "ok",
+      "queue_ms": 0.45980000868439674,
+      "embedding_ms": 12.016199994832277,
+      "search_ms": 1.9344000611454248
+    },
+    {
+      "elapsed_ms": 30.2496999502182,
+      "cache_hit": false,
+      "status": "ok",
+      "queue_ms": 14.453300042077899,
+      "embedding_ms": 13.109699939377606,
+      "search_ms": 1.9717999966815114
+    },
+    {
+      "elapsed_ms": 30.213200021535158,
+      "cache_hit": false,
+      "status": "ok",
+      "queue_ms": 15.164999989792705,
+      "embedding_ms": 12.639099964872003,
+      "search_ms": 1.6434000572189689
+    },
+    {
+      "elapsed_ms": 39.378800080157816,
+      "cache_hit": false,
+      "status": "ok",
+      "queue_ms": 29.628199990838766,
+      "embedding_ms": 8.33260000217706,
+      "search_ms": 1.2120000319555402
+    },
+    {
+      "elapsed_ms": 0.004300032742321491,
+      "cache_hit": true,
+      "status": "ok"
+    },
+    {
+      "elapsed_ms": 0.001600012183189392,
+      "cache_hit": true,
+      "status": "ok"
+    },
+    {
+      "elapsed_ms": 0.001300009898841381,
+      "cache_hit": true,
+      "status": "ok"
+    },
+    {
+      "elapsed_ms": 0.000800006091594696,
+      "cache_hit": true,
+      "status": "ok"
+    },
+    {
+      "elapsed_ms": 0.00100000761449337,
+      "cache_hit": true,
+      "status": "ok"
+    },
+    {
+      "elapsed_ms": 15.414799912832677,
+      "cache_hit": false,
+      "status": "ok",
+      "queue_ms": 0.11129991617053747,
+      "embedding_ms": 12.558600050397217,
+      "search_ms": 1.7685999628156424
+    },
+    {
+      "elapsed_ms": 15.388999949209392,
+      "cache_hit": false,
+      "status": "ok",
+      "queue_ms": 0.43569994159042835,
+      "embedding_ms": 12.400600011460483,
+      "search_ms": 1.6841000178828835
+    },
+    {
+      "elapsed_ms": 31.94939997047186,
+      "cache_hit": false,
+      "status": "ok",
+      "queue_ms": 14.564899960532784,
+      "embedding_ms": 14.951899996958673,
+      "search_ms": 1.7370999557897449
+    },
+    {
+      "elapsed_ms": 31.92249999847263,
+      "cache_hit": false,
+      "status": "ok",
+      "queue_ms": 15.018000034615397,
+      "embedding_ms": 14.208199921995401,
+      "search_ms": 1.9332000520080328
+    },
+    {
+      "elapsed_ms": 41.829599998891354,
+      "cache_hit": false,
+      "status": "ok",
+      "queue_ms": 31.296700006350875,
+      "embedding_ms": 8.325699949637055,
+      "search_ms": 1.8518000142648816
+    },
+    {
+      "elapsed_ms": 0.004699919372797012,
+      "cache_hit": true,
+      "status": "ok"
+    },
+    {
+      "elapsed_ms": 0.001500011421740055,
+      "cache_hit": true,
+      "status": "ok"
+    },
+    {
+      "elapsed_ms": 0.001500011421740055,
+      "cache_hit": true,
+      "status": "ok"
+    },
+    {
+      "elapsed_ms": 0.001100008375942707,
+      "cache_hit": true,
+      "status": "ok"
+    },
+    {
+      "elapsed_ms": 0.001400010660290718,
+      "cache_hit": true,
+      "status": "ok"
+    },
+    {
+      "elapsed_ms": 21.574100013822317,
+      "cache_hit": false,
+      "status": "ok",
+      "queue_ms": 0.11720007751137018,
+      "embedding_ms": 18.797599943354726,
+      "search_ms": 1.9407999934628606
+    },
+    {
+      "elapsed_ms": 21.544900024309754,
+      "cache_hit": false,
+      "status": "ok",
+      "queue_ms": 0.6856000982224941,
+      "embedding_ms": 18.597899936139584,
+      "search_ms": 2.0531000336632133
+    },
+    {
+      "elapsed_ms": 41.72600002493709,
+      "cache_hit": false,
+      "status": "ok",
+      "queue_ms": 20.913999993354082,
+      "embedding_ms": 18.20450008381158,
+      "search_ms": 1.9918999169021845
+    },
+    {
+      "elapsed_ms": 41.69850004836917,
+      "cache_hit": false,
+      "status": "ok",
+      "queue_ms": 21.585200098343194,
+      "embedding_ms": 17.731099971570075,
+      "search_ms": 1.7089999746531248
+    },
+    {
+      "elapsed_ms": 52.390399971045554,
+      "cache_hit": false,
+      "status": "ok",
+      "queue_ms": 41.14389989990741,
+      "embedding_ms": 9.764800081029534,
+      "search_ms": 1.2354999780654907
+    },
+    {
+      "elapsed_ms": 0.004600035026669502,
+      "cache_hit": true,
+      "status": "ok"
+    },
+    {
+      "elapsed_ms": 0.00200001522898674,
+      "cache_hit": true,
+      "status": "ok"
+    },
+    {
+      "elapsed_ms": 0.001200009137392044,
+      "cache_hit": true,
+      "status": "ok"
+    },
+    {
+      "elapsed_ms": 0.002400018274784088,
+      "cache_hit": true,
+      "status": "ok"
+    },
+    {
+      "elapsed_ms": 0.00100000761449337,
+      "cache_hit": true,
+      "status": "ok"
+    },
+    {
+      "elapsed_ms": 15.117300092242658,
+      "cache_hit": false,
+      "status": "no_match",
+      "queue_ms": 0.11120003182440996,
+      "embedding_ms": 11.851200019009411,
+      "search_ms": 2.509000012651086
+    },
+    {
+      "elapsed_ms": 15.720899915322661,
+      "cache_hit": false,
+      "status": "no_match",
+      "queue_ms": 0.4539999645203352,
+      "embedding_ms": 11.975200031884015,
+      "search_ms": 2.7083000168204308
+    },
+    {
+      "elapsed_ms": 29.205900034867227,
+      "cache_hit": false,
+      "status": "no_match",
+      "queue_ms": 14.528500032611191,
+      "embedding_ms": 12.332299957051873,
+      "search_ms": 2.0907000871375203
+    },
+    {
+      "elapsed_ms": 29.052200028672814,
+      "cache_hit": false,
+      "status": "no_match",
+      "queue_ms": 15.16440010163933,
+      "embedding_ms": 11.35649997740984,
+      "search_ms": 1.8114999402314425
+    },
+    {
+      "elapsed_ms": 39.245399995706975,
+      "cache_hit": false,
+      "status": "no_match",
+      "queue_ms": 28.426299919374287,
+      "embedding_ms": 9.24550008494407,
+      "search_ms": 1.3457000022754073
+    },
+    {
+      "elapsed_ms": 0.004400033503770828,
+      "cache_hit": true,
+      "status": "no_match"
+    },
+    {
+      "elapsed_ms": 0.001500011421740055,
+      "cache_hit": true,
+      "status": "no_match"
+    },
+    {
+      "elapsed_ms": 0.0014998950064182281,
+      "cache_hit": true,
+      "status": "no_match"
+    },
+    {
+      "elapsed_ms": 0.001100008375942707,
+      "cache_hit": true,
+      "status": "no_match"
+    },
+    {
+      "elapsed_ms": 0.000900006853044033,
+      "cache_hit": true,
+      "status": "no_match"
+    },
+    {
+      "elapsed_ms": 16.3763000164181,
+      "cache_hit": false,
+      "status": "no_match",
+      "queue_ms": 0.11260004248470068,
+      "embedding_ms": 13.149900012649596,
+      "search_ms": 1.8250999273732305
+    },
+    {
+      "elapsed_ms": 16.37009996920824,
+      "cache_hit": false,
+      "status": "no_match",
+      "queue_ms": 0.45439996756613255,
+      "embedding_ms": 12.990299961529672,
+      "search_ms": 2.195300068706274
+    },
+    {
+      "elapsed_ms": 31.661300105042756,
+      "cache_hit": false,
+      "status": "no_match",
+      "queue_ms": 15.20290004555136,
+      "embedding_ms": 13.83509999141097,
+      "search_ms": 2.382699982263148
+    },
+    {
+      "elapsed_ms": 31.62179992068559,
+      "cache_hit": false,
+      "status": "no_match",
+      "queue_ms": 15.681999968364835,
+      "embedding_ms": 13.131999992765486,
+      "search_ms": 1.8082000315189362
+    },
+    {
+      "elapsed_ms": 42.61539992876351,
+      "cache_hit": false,
+      "status": "no_match",
+      "queue_ms": 30.790199991315603,
+      "embedding_ms": 10.201500030234456,
+      "search_ms": 1.352699939161539
+    },
+    {
+      "elapsed_ms": 0.004600035026669502,
+      "cache_hit": true,
+      "status": "no_match"
+    },
+    {
+      "elapsed_ms": 0.001500011421740055,
+      "cache_hit": true,
+      "status": "no_match"
+    },
+    {
+      "elapsed_ms": 0.0016998965293169022,
+      "cache_hit": true,
+      "status": "no_match"
+    },
+    {
+      "elapsed_ms": 0.000900006853044033,
+      "cache_hit": true,
+      "status": "no_match"
+    },
+    {
+      "elapsed_ms": 0.001600012183189392,
+      "cache_hit": true,
+      "status": "no_match"
+    },
+    {
+      "elapsed_ms": 18.610000028274953,
+      "cache_hit": false,
+      "status": "ok",
+      "queue_ms": 0.11490005999803543,
+      "embedding_ms": 15.577199985273182,
+      "search_ms": 1.6565999248996377
+    },
+    {
+      "elapsed_ms": 18.583899945952,
+      "cache_hit": false,
+      "status": "ok",
+      "queue_ms": 0.4504999378696084,
+      "embedding_ms": 15.41910006199032,
+      "search_ms": 2.0042998949065804
+    },
+    {
+      "elapsed_ms": 33.15949998795986,
+      "cache_hit": false,
+      "status": "ok",
+      "queue_ms": 17.403500038199127,
+      "embedding_ms": 13.590999995358288,
+      "search_ms": 1.945700030773878
+    },
+    {
+      "elapsed_ms": 33.12100004404783,
+      "cache_hit": false,
+      "status": "ok",
+      "queue_ms": 17.915400094352663,
+      "embedding_ms": 12.723099905997515,
+      "search_ms": 1.7282000044360757
+    },
+    {
+      "elapsed_ms": 42.54419996868819,
+      "cache_hit": false,
+      "status": "ok",
+      "queue_ms": 32.471499987877905,
+      "embedding_ms": 8.465499966405332,
+      "search_ms": 1.413899939507246
+    },
+    {
+      "elapsed_ms": 0.004500034265220165,
+      "cache_hit": true,
+      "status": "ok"
+    },
+    {
+      "elapsed_ms": 0.00200001522898674,
+      "cache_hit": true,
+      "status": "ok"
+    },
+    {
+      "elapsed_ms": 0.001200009137392044,
+      "cache_hit": true,
+      "status": "ok"
+    },
+    {
+      "elapsed_ms": 0.001100008375942707,
+      "cache_hit": true,
+      "status": "ok"
+    },
+    {
+      "elapsed_ms": 0.000800006091594696,
+      "cache_hit": true,
+      "status": "ok"
+    },
+    {
+      "elapsed_ms": 15.376199968159199,
+      "cache_hit": false,
+      "status": "ok",
+      "queue_ms": 0.11450005695223808,
+      "embedding_ms": 12.6394999679178,
+      "search_ms": 2.091699978336692
+    },
+    {
+      "elapsed_ms": 15.297300065867603,
+      "cache_hit": false,
+      "status": "ok",
+      "queue_ms": 0.45520009007304907,
+      "embedding_ms": 11.910400004126132,
+      "search_ms": 1.8548999214544892
+    },
+    {
+      "elapsed_ms": 30.33750003669411,
+      "cache_hit": false,
+      "status": "ok",
+      "queue_ms": 14.310400001704693,
+      "embedding_ms": 13.45750002656132,
+      "search_ms": 1.8505000043660402
+    },
+    {
+      "elapsed_ms": 30.335200019180775,
+      "cache_hit": false,
+      "status": "ok",
+      "queue_ms": 14.915800071321428,
+      "embedding_ms": 13.109299936331809,
+      "search_ms": 1.6632999759167433
+    },
+    {
+      "elapsed_ms": 39.845400024205446,
+      "cache_hit": false,
+      "status": "ok",
+      "queue_ms": 29.721600003540516,
+      "embedding_ms": 8.479900076054037,
+      "search_ms": 1.437900005839765
+    },
+    {
+      "elapsed_ms": 0.01580000389367342,
+      "cache_hit": true,
+      "status": "ok"
+    },
+    {
+      "elapsed_ms": 0.001700012944638729,
+      "cache_hit": true,
+      "status": "ok"
+    },
+    {
+      "elapsed_ms": 0.0013998942449688911,
+      "cache_hit": true,
+      "status": "ok"
+    },
+    {
+      "elapsed_ms": 0.001200009137392044,
+      "cache_hit": true,
+      "status": "ok"
+    },
+    {
+      "elapsed_ms": 0.00100000761449337,
+      "cache_hit": true,
+      "status": "ok"
+    },
+    {
+      "elapsed_ms": 14.714400051161647,
+      "cache_hit": false,
+      "status": "ok",
+      "queue_ms": 0.11200003791600466,
+      "embedding_ms": 11.847599991597235,
+      "search_ms": 1.871699932962656
+    },
+    {
+      "elapsed_ms": 15.369100030511618,
+      "cache_hit": false,
+      "status": "ok",
+      "queue_ms": 0.4390000831335783,
+      "embedding_ms": 11.687699938192964,
+      "search_ms": 2.614299999549985
+    },
+    {
+      "elapsed_ms": 28.518800041638315,
+      "cache_hit": false,
+      "status": "ok",
+      "queue_ms": 14.03970003593713,
+      "embedding_ms": 12.389799929223955,
+      "search_ms": 1.5422001015394926
+    },
+    {
+      "elapsed_ms": 32.09750005044043,
+      "cache_hit": false,
+      "status": "ok",
+      "queue_ms": 14.790400047786534,
+      "embedding_ms": 11.425800039432943,
+      "search_ms": 5.514799966476858
+    },
+    {
+      "elapsed_ms": 38.732699933461845,
+      "cache_hit": false,
+      "status": "ok",
+      "queue_ms": 28.101799893192947,
+      "embedding_ms": 9.008700028061867,
+      "search_ms": 1.4085000148043036
+    },
+    {
+      "elapsed_ms": 0.004100031219422817,
+      "cache_hit": true,
+      "status": "ok"
+    },
+    {
+      "elapsed_ms": 0.001400010660290718,
+      "cache_hit": true,
+      "status": "ok"
+    },
+    {
+      "elapsed_ms": 0.00100000761449337,
+      "cache_hit": true,
+      "status": "ok"
+    },
+    {
+      "elapsed_ms": 0.001200009137392044,
+      "cache_hit": true,
+      "status": "ok"
+    },
+    {
+      "elapsed_ms": 0.000900006853044033,
+      "cache_hit": true,
+      "status": "ok"
+    },
+    {
+      "elapsed_ms": 24.04340007342398,
+      "cache_hit": false,
+      "status": "ok",
+      "queue_ms": 0.11110003106296062,
+      "embedding_ms": 14.062699978239834,
+      "search_ms": 9.283000021241605
+    },
+    {
+      "elapsed_ms": 16.548999934457242,
+      "cache_hit": false,
+      "status": "ok",
+      "queue_ms": 0.4393999697640538,
+      "embedding_ms": 13.298999983817339,
+      "search_ms": 2.157100010663271
+    },
+    {
+      "elapsed_ms": 29.918799991719425,
+      "cache_hit": false,
+      "status": "ok",
+      "queue_ms": 16.05179999023676,
+      "embedding_ms": 11.40830002259463,
+      "search_ms": 1.7825000686571002
+    },
+    {
+      "elapsed_ms": 38.3967999368906,
+      "cache_hit": false,
+      "status": "ok",
+      "queue_ms": 23.525799973867834,
+      "embedding_ms": 12.875000014901161,
+      "search_ms": 1.6709999181330204
+    },
+    {
+      "elapsed_ms": 41.350899962708354,
+      "cache_hit": false,
+      "status": "ok",
+      "queue_ms": 29.457999975420535,
+      "embedding_ms": 10.39029995445162,
+      "search_ms": 1.3371000532060862
+    },
+    {
+      "elapsed_ms": 0.004500034265220165,
+      "cache_hit": true,
+      "status": "ok"
+    },
+    {
+      "elapsed_ms": 0.001600012183189392,
+      "cache_hit": true,
+      "status": "ok"
+    },
+    {
+      "elapsed_ms": 0.001200009137392044,
+      "cache_hit": true,
+      "status": "ok"
+    },
+    {
+      "elapsed_ms": 0.00200001522898674,
+      "cache_hit": true,
+      "status": "ok"
+    },
+    {
+      "elapsed_ms": 0.00100000761449337,
+      "cache_hit": true,
+      "status": "ok"
+    },
+    {
+      "elapsed_ms": 13.422199990600348,
+      "cache_hit": false,
+      "status": "no_match",
+      "queue_ms": 0.12620002962648869,
+      "embedding_ms": 10.912399971857667,
+      "search_ms": 1.7325000371783972
+    },
+    {
+      "elapsed_ms": 14.09910002257675,
+      "cache_hit": false,
+      "status": "no_match",
+      "queue_ms": 0.4320000298321247,
+      "embedding_ms": 11.440300033427775,
+      "search_ms": 1.5681999502703547
+    },
+    {
+      "elapsed_ms": 28.213500045239925,
+      "cache_hit": false,
+      "status": "no_match",
+      "queue_ms": 12.815600028261542,
+      "embedding_ms": 12.795699993148446,
+      "search_ms": 1.6895999433472753
+    },
+    {
+      "elapsed_ms": 28.184200054965913,
+      "cache_hit": false,
+      "status": "no_match",
+      "queue_ms": 13.484700000844896,
+      "embedding_ms": 11.714600026607513,
+      "search_ms": 1.9490999402478337
+    },
+    {
+      "elapsed_ms": 36.975600058212876,
+      "cache_hit": false,
+      "status": "no_match",
+      "queue_ms": 27.335299993865192,
+      "embedding_ms": 8.088600006885827,
+      "search_ms": 1.3505000388249755
+    },
+    {
+      "elapsed_ms": 0.004299916326999664,
+      "cache_hit": true,
+      "status": "no_match"
+    },
+    {
+      "elapsed_ms": 0.001300009898841381,
+      "cache_hit": true,
+      "status": "no_match"
+    },
+    {
+      "elapsed_ms": 0.001200009137392044,
+      "cache_hit": true,
+      "status": "no_match"
+    },
+    {
+      "elapsed_ms": 0.001200009137392044,
+      "cache_hit": true,
+      "status": "no_match"
+    },
+    {
+      "elapsed_ms": 0.000800006091594696,
+      "cache_hit": true,
+      "status": "no_match"
+    },
+    {
+      "elapsed_ms": 15.307600027881563,
+      "cache_hit": false,
+      "status": "no_match",
+      "queue_ms": 0.1140000531449914,
+      "embedding_ms": 12.165599968284369,
+      "search_ms": 2.5019999593496323
+    },
+    {
+      "elapsed_ms": 14.840499963611364,
+      "cache_hit": false,
+      "status": "no_match",
+      "queue_ms": 0.44849992264062166,
+      "embedding_ms": 11.510199983604252,
+      "search_ms": 2.1937000565230846
+    },
+    {
+      "elapsed_ms": 28.77560001797974,
+      "cache_hit": false,
+      "status": "no_match",
+      "queue_ms": 14.252200024202466,
+      "embedding_ms": 11.890099965967238,
+      "search_ms": 1.9151000306010246
+    },
+    {
+      "elapsed_ms": 28.77440000884235,
+      "cache_hit": false,
+      "status": "no_match",
+      "queue_ms": 14.879400026984513,
+      "embedding_ms": 11.634800001047552,
+      "search_ms": 1.608200022019446
+    },
+    {
+      "elapsed_ms": 37.821699981577694,
+      "cache_hit": false,
+      "status": "no_match",
+      "queue_ms": 28.155899955891073,
+      "embedding_ms": 8.41250002849847,
+      "search_ms": 1.0496999602764845
+    },
+    {
+      "elapsed_ms": 0.004800036549568176,
+      "cache_hit": true,
+      "status": "no_match"
+    },
+    {
+      "elapsed_ms": 0.001500011421740055,
+      "cache_hit": true,
+      "status": "no_match"
+    },
+    {
+      "elapsed_ms": 0.001100008375942707,
+      "cache_hit": true,
+      "status": "no_match"
+    },
+    {
+      "elapsed_ms": 0.000900006853044033,
+      "cache_hit": true,
+      "status": "no_match"
+    },
+    {
+      "elapsed_ms": 0.001800013706088066,
+      "cache_hit": true,
+      "status": "no_match"
+    },
+    {
+      "elapsed_ms": 16.62090001627803,
+      "cache_hit": false,
+      "status": "ok",
+      "queue_ms": 0.11279992759227753,
+      "embedding_ms": 13.558900100179017,
+      "search_ms": 2.0447999704629183
+    },
+    {
+      "elapsed_ms": 16.567900078371167,
+      "cache_hit": false,
+      "status": "ok",
+      "queue_ms": 0.4133000038564205,
+      "embedding_ms": 13.006000081077218,
+      "search_ms": 1.732399920001626
+    },
+    {
+      "elapsed_ms": 31.336799962446094,
+      "cache_hit": false,
+      "status": "ok",
+      "queue_ms": 15.254199970513582,
+      "embedding_ms": 13.640700024552643,
+      "search_ms": 2.1023000590503216
+    },
+    {
+      "elapsed_ms": 31.30210004746914,
+      "cache_hit": false,
+      "status": "ok",
+      "queue_ms": 15.835499973036349,
+      "embedding_ms": 12.77450006455183,
+      "search_ms": 1.8321999814361334
+    },
+    {
+      "elapsed_ms": 40.237100096419454,
+      "cache_hit": false,
+      "status": "ok",
+      "queue_ms": 30.540100065991282,
+      "embedding_ms": 8.305400027893484,
+      "search_ms": 1.2108999071642756
+    },
+    {
+      "elapsed_ms": 0.003999914042651653,
+      "cache_hit": true,
+      "status": "ok"
+    },
+    {
+      "elapsed_ms": 0.001400010660290718,
+      "cache_hit": true,
+      "status": "ok"
+    },
+    {
+      "elapsed_ms": 0.001300009898841381,
+      "cache_hit": true,
+      "status": "ok"
+    },
+    {
+      "elapsed_ms": 0.00100000761449337,
+      "cache_hit": true,
+      "status": "ok"
+    },
+    {
+      "elapsed_ms": 0.0008998904377222061,
+      "cache_hit": true,
+      "status": "ok"
+    },
+    {
+      "elapsed_ms": 14.595499960705638,
+      "cache_hit": false,
+      "status": "ok",
+      "queue_ms": 0.11160003487020731,
+      "embedding_ms": 12.07209995482117,
+      "search_ms": 1.8629999831318855
+    },
+    {
+      "elapsed_ms": 15.185199910774827,
+      "cache_hit": false,
+      "status": "ok",
+      "queue_ms": 0.408399966545403,
+      "embedding_ms": 12.391500058583915,
+      "search_ms": 1.81639997754246
+    },
+    {
+      "elapsed_ms": 29.825599980540574,
+      "cache_hit": false,
+      "status": "ok",
+      "queue_ms": 14.104299945756793,
+      "embedding_ms": 13.41300003696233,
+      "search_ms": 2.083399915136397
+    },
+    {
+      "elapsed_ms": 29.797700000926852,
+      "cache_hit": false,
+      "status": "ok",
+      "queue_ms": 14.652699930593371,
+      "embedding_ms": 12.643699999898672,
+      "search_ms": 1.7554000951349735
+    },
+    {
+      "elapsed_ms": 39.56059995107353,
+      "cache_hit": false,
+      "status": "ok",
+      "queue_ms": 29.151099966838956,
+      "embedding_ms": 8.849099976941943,
+      "search_ms": 1.3488000258803368
+    },
+    {
+      "elapsed_ms": 0.004800036549568176,
+      "cache_hit": true,
+      "status": "ok"
+    },
+    {
+      "elapsed_ms": 0.0018998980522155762,
+      "cache_hit": true,
+      "status": "ok"
+    },
+    {
+      "elapsed_ms": 0.001300009898841381,
+      "cache_hit": true,
+      "status": "ok"
+    },
+    {
+      "elapsed_ms": 0.00100000761449337,
+      "cache_hit": true,
+      "status": "ok"
+    },
+    {
+      "elapsed_ms": 0.000800006091594696,
+      "cache_hit": true,
+      "status": "ok"
+    },
+    {
+      "elapsed_ms": 15.24119998794049,
+      "cache_hit": false,
+      "status": "ok",
+      "queue_ms": 0.112400040961802,
+      "embedding_ms": 12.43510004132986,
+      "search_ms": 1.6181999817490578
+    },
+    {
+      "elapsed_ms": 15.246499911881983,
+      "cache_hit": false,
+      "status": "ok",
+      "queue_ms": 0.4384999629110098,
+      "embedding_ms": 12.332299957051873,
+      "search_ms": 1.8746000714600086
+    },
+    {
+      "elapsed_ms": 28.44710007775575,
+      "cache_hit": false,
+      "status": "ok",
+      "queue_ms": 14.221800025552511,
+      "embedding_ms": 12.057000072672963,
+      "search_ms": 1.8300999654456973
+    },
+    {
+      "elapsed_ms": 28.418299974873662,
+      "cache_hit": false,
+      "status": "ok",
+      "queue_ms": 14.744599931873381,
+      "embedding_ms": 11.320500052534044,
+      "search_ms": 1.5038999263197184
+    },
+    {
+      "elapsed_ms": 37.73929993622005,
+      "cache_hit": false,
+      "status": "ok",
+      "queue_ms": 27.658100007101893,
+      "embedding_ms": 8.580599911510944,
+      "search_ms": 1.2808000901713967
+    },
+    {
+      "elapsed_ms": 0.004400033503770828,
+      "cache_hit": true,
+      "status": "ok"
+    },
+    {
+      "elapsed_ms": 0.0013998942449688911,
+      "cache_hit": true,
+      "status": "ok"
+    },
+    {
+      "elapsed_ms": 0.001600012183189392,
+      "cache_hit": true,
+      "status": "ok"
+    },
+    {
+      "elapsed_ms": 0.001700012944638729,
+      "cache_hit": true,
+      "status": "ok"
+    },
+    {
+      "elapsed_ms": 0.00100000761449337,
+      "cache_hit": true,
+      "status": "ok"
+    },
+    {
+      "elapsed_ms": 15.935100032947958,
+      "cache_hit": false,
+      "status": "ok",
+      "queue_ms": 0.10870001278817654,
+      "embedding_ms": 12.910000048577785,
+      "search_ms": 2.330699935555458
+    },
+    {
+      "elapsed_ms": 15.87359991390258,
+      "cache_hit": false,
+      "status": "ok",
+      "queue_ms": 0.43489993549883366,
+      "embedding_ms": 12.274899985641241,
+      "search_ms": 1.8246000399813056
+    },
+    {
+      "elapsed_ms": 30.607699998654425,
+      "cache_hit": false,
+      "status": "ok",
+      "queue_ms": 14.662500005215406,
+      "embedding_ms": 13.87390005402267,
+      "search_ms": 1.8615999724715948
+    },
+    {
+      "elapsed_ms": 30.330199981108308,
+      "cache_hit": false,
+      "status": "ok",
+      "queue_ms": 15.358499949797988,
+      "embedding_ms": 12.820200063288212,
+      "search_ms": 1.6070998972281814
+    },
+    {
+      "elapsed_ms": 39.79479998815805,
+      "cache_hit": false,
+      "status": "ok",
+      "queue_ms": 29.886099975556135,
+      "embedding_ms": 8.547700010240078,
+      "search_ms": 1.1548999464139342
+    },
+    {
+      "elapsed_ms": 0.004799920134246349,
+      "cache_hit": true,
+      "status": "ok"
+    },
+    {
+      "elapsed_ms": 0.001500011421740055,
+      "cache_hit": true,
+      "status": "ok"
+    },
+    {
+      "elapsed_ms": 0.001400010660290718,
+      "cache_hit": true,
+      "status": "ok"
+    },
+    {
+      "elapsed_ms": 0.001999898813664913,
+      "cache_hit": true,
+      "status": "ok"
+    },
+    {
+      "elapsed_ms": 0.001100008375942707,
+      "cache_hit": true,
+      "status": "ok"
+    },
+    {
+      "elapsed_ms": 14.135300065390766,
+      "cache_hit": false,
+      "status": "no_match",
+      "queue_ms": 0.12510002125054598,
+      "embedding_ms": 11.578300036489964,
+      "search_ms": 1.8995999125763774
+    },
+    {
+      "elapsed_ms": 14.309499994851649,
+      "cache_hit": false,
+      "status": "no_match",
+      "queue_ms": 0.4195000510662794,
+      "embedding_ms": 11.44069992005825,
+      "search_ms": 2.284300047904253
+    },
+    {
+      "elapsed_ms": 28.60530000180006,
+      "cache_hit": false,
+      "status": "no_match",
+      "queue_ms": 13.69729998987168,
+      "embedding_ms": 12.5419000396505,
+      "search_ms": 1.7451999010518193
+    },
+    {
+      "elapsed_ms": 28.578300029039383,
+      "cache_hit": false,
+      "status": "no_match",
+      "queue_ms": 14.303099946118891,
+      "embedding_ms": 11.553100077435374,
+      "search_ms": 2.0054999040439725
+    },
+    {
+      "elapsed_ms": 43.537699966691434,
+      "cache_hit": false,
+      "status": "no_match",
+      "queue_ms": 28.067999985069036,
+      "embedding_ms": 8.007299969904125,
+      "search_ms": 1.389100099913776
+    },
+    {
+      "elapsed_ms": 0.005100038833916187,
+      "cache_hit": true,
+      "status": "no_match"
+    },
+    {
+      "elapsed_ms": 0.001400010660290718,
+      "cache_hit": true,
+      "status": "no_match"
+    },
+    {
+      "elapsed_ms": 0.001100008375942707,
+      "cache_hit": true,
+      "status": "no_match"
+    },
+    {
+      "elapsed_ms": 0.001200009137392044,
+      "cache_hit": true,
+      "status": "no_match"
+    },
+    {
+      "elapsed_ms": 0.000900006853044033,
+      "cache_hit": true,
+      "status": "no_match"
+    },
+    {
+      "elapsed_ms": 15.51669999025762,
+      "cache_hit": false,
+      "status": "no_match",
+      "queue_ms": 0.11530006304383278,
+      "embedding_ms": 12.745399959385395,
+      "search_ms": 2.1135000279173255
+    },
+    {
+      "elapsed_ms": 15.450000064447522,
+      "cache_hit": false,
+      "status": "no_match",
+      "queue_ms": 0.5999000277370214,
+      "embedding_ms": 12.005000025965273,
+      "search_ms": 1.776200020685792
+    },
+    {
+      "elapsed_ms": 29.00219999719411,
+      "cache_hit": false,
+      "status": "no_match",
+      "queue_ms": 14.526100014336407,
+      "embedding_ms": 11.89740002155304,
+      "search_ms": 1.7543999711051583
+    },
+    {
+      "elapsed_ms": 29.245699988678098,
+      "cache_hit": false,
+      "status": "no_match",
+      "queue_ms": 14.968200004659593,
+      "embedding_ms": 12.142800027504563,
+      "search_ms": 1.9383999751880765
+    },
+    {
+      "elapsed_ms": 38.36650005541742,
+      "cache_hit": false,
+      "status": "no_match",
+      "queue_ms": 28.357800096273422,
+      "embedding_ms": 8.869400015100837,
+      "search_ms": 0.9376999223604798
+    },
+    {
+      "elapsed_ms": 0.004500034265220165,
+      "cache_hit": true,
+      "status": "no_match"
+    },
+    {
+      "elapsed_ms": 0.0014998950064182281,
+      "cache_hit": true,
+      "status": "no_match"
+    },
+    {
+      "elapsed_ms": 0.001300009898841381,
+      "cache_hit": true,
+      "status": "no_match"
+    },
+    {
+      "elapsed_ms": 0.000900006853044033,
+      "cache_hit": true,
+      "status": "no_match"
+    },
+    {
+      "elapsed_ms": 0.001900014467537403,
+      "cache_hit": true,
+      "status": "no_match"
+    },
+    {
+      "elapsed_ms": 16.601699986495078,
+      "cache_hit": false,
+      "status": "ok",
+      "queue_ms": 0.11270004324615002,
+      "embedding_ms": 14.054599916562438,
+      "search_ms": 1.6568000428378582
+    },
+    {
+      "elapsed_ms": 17.172400024719536,
+      "cache_hit": false,
+      "status": "ok",
+      "queue_ms": 0.43080002069473267,
+      "embedding_ms": 14.082200010307133,
+      "search_ms": 2.1065999753773212
+    },
+    {
+      "elapsed_ms": 31.37750003952533,
+      "cache_hit": false,
+      "status": "ok",
+      "queue_ms": 15.956000075675547,
+      "embedding_ms": 13.124699937179685,
+      "search_ms": 1.7288000090047717
+    },
+    {
+      "elapsed_ms": 31.58200008329004,
+      "cache_hit": false,
+      "status": "ok",
+      "queue_ms": 16.727000009268522,
+      "embedding_ms": 12.60570005979389,
+      "search_ms": 2.0904999691993
+    },
+    {
+      "elapsed_ms": 41.56499996315688,
+      "cache_hit": false,
+      "status": "ok",
+      "queue_ms": 30.973299988545477,
+      "embedding_ms": 9.0541000245139,
+      "search_ms": 1.3358999276533723
+    },
+    {
+      "elapsed_ms": 0.004500034265220165,
+      "cache_hit": true,
+      "status": "ok"
+    },
+    {
+      "elapsed_ms": 0.002200016751885414,
+      "cache_hit": true,
+      "status": "ok"
+    },
+    {
+      "elapsed_ms": 0.001500011421740055,
+      "cache_hit": true,
+      "status": "ok"
+    },
+    {
+      "elapsed_ms": 0.001400010660290718,
+      "cache_hit": true,
+      "status": "ok"
+    },
+    {
+      "elapsed_ms": 0.000900006853044033,
+      "cache_hit": true,
+      "status": "ok"
+    },
+    {
+      "elapsed_ms": 15.666899969801307,
+      "cache_hit": false,
+      "status": "ok",
+      "queue_ms": 0.1132000470533967,
+      "embedding_ms": 13.018899946473539,
+      "search_ms": 1.922599971294403
+    },
+    {
+      "elapsed_ms": 16.22950006276369,
+      "cache_hit": false,
+      "status": "ok",
+      "queue_ms": 0.4072000738233328,
+      "embedding_ms": 12.98190001398325,
+      "search_ms": 2.2953998995944858
+    },
+    {
+      "elapsed_ms": 31.2617999734357,
+      "cache_hit": false,
+      "status": "ok",
+      "queue_ms": 15.12880006339401,
+      "embedding_ms": 14.021099894307554,
+      "search_ms": 1.9272000063210726
+    },
+    {
+      "elapsed_ms": 31.00720001384616,
+      "cache_hit": false,
+      "status": "ok",
+      "queue_ms": 15.80290007404983,
+      "embedding_ms": 12.902699992991984,
+      "search_ms": 1.5431999927386642
+    },
+    {
+      "elapsed_ms": 40.43169994838536,
+      "cache_hit": false,
+      "status": "ok",
+      "queue_ms": 30.434099957346916,
+      "embedding_ms": 8.561900001950562,
+      "search_ms": 1.2286999262869358
+    },
+    {
+      "elapsed_ms": 0.004700035788118839,
+      "cache_hit": true,
+      "status": "ok"
+    },
+    {
+      "elapsed_ms": 0.002100015990436077,
+      "cache_hit": true,
+      "status": "ok"
+    },
+    {
+      "elapsed_ms": 0.001300009898841381,
+      "cache_hit": true,
+      "status": "ok"
+    },
+    {
+      "elapsed_ms": 0.00100000761449337,
+      "cache_hit": true,
+      "status": "ok"
+    },
+    {
+      "elapsed_ms": 0.00100000761449337,
+      "cache_hit": true,
+      "status": "ok"
+    }
+  ]
+}

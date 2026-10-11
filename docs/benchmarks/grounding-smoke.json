@@ -1,0 +1,6 @@
+{
+  "injected_evidence_test": "The price of ProSound earbuds is $73.21.\n\nSources: `test.md`",
+  "passed": true,
+  "conflicting_evidence_test": "I found conflicting information in the store documents and can't confirm those details. Please clarify the product or contact support to verify the current information.",
+  "conflict_passed": true
+}
