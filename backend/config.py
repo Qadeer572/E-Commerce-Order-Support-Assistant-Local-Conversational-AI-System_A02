@@ -19,7 +19,7 @@ HISTORY_FILE  = DATA_DIR / "chat_history.json"
 
 # ── Ollama / LLM ─────────────────────────────────────────────────────────────
 OLLAMA_HOST  = os.getenv("OLLAMA_HOST", "http://localhost:11434")
-MODEL_NAME   = os.getenv("SHOPBOT_MODEL", "qwen2.5:1.5b")
+MODEL_NAME   = os.getenv("SHOPBOT_MODEL", "qwen2.5:0.5b")
 
 # Generation parameters
 TEMPERATURE  = float(os.getenv("SHOPBOT_TEMPERATURE", "0.3"))
@@ -32,9 +32,22 @@ MAX_HISTORY_TOKENS = int(os.getenv("SHOPBOT_MAX_HISTORY_TOKENS", "1800"))
 # Always keep at least this many recent turns regardless of token budget
 MIN_HISTORY_TURNS  = int(os.getenv("SHOPBOT_MIN_HISTORY_TURNS", "2"))
 
+# ── LLM engine tuning ────────────────────────────────────────────────────────
+# Number of CPU threads for llama.cpp inference (0 = auto-detect)
+NUM_THREADS = int(os.getenv("SHOPBOT_NUM_THREADS", "0"))
+MODEL_KEEP_ALIVE = os.getenv("SHOPBOT_KEEP_ALIVE", "30m")
+
 # ── Session ───────────────────────────────────────────────────────────────────
 # Session timeout in seconds (30 minutes of inactivity)
 SESSION_TIMEOUT_SECONDS = int(os.getenv("SHOPBOT_SESSION_TIMEOUT", "1800"))
 
 # ── Server ───────────────────────────────────────────────────────────────────
 ALLOWED_ORIGINS = ["*"]   # tighten in production
+
+# Local RAG assets. Downloads occur only through scripts/prepare_models.py.
+MODEL_DIR = BASE_DIR / "models"
+CORPUS_DIR = DATA_DIR / "corpus"
+VECTOR_DIR = DATA_DIR / "vector_store"
+CONTEXT_TOKENS = 4096
+RAG_THRESHOLD = float(os.getenv("SHOPBOT_RAG_THRESHOLD", "0.40"))
+RAG_TIMEOUT = float(os.getenv("SHOPBOT_RAG_TIMEOUT", "1.5"))

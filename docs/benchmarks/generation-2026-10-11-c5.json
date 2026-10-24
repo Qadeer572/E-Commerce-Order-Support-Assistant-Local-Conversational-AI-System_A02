@@ -1,0 +1,42 @@
+[
+  {
+    "session_id": "0f88741c-3887-4429-8cca-b13b146e1e72",
+    "terminal": "done",
+    "ttft_ms": 3458.356500021182,
+    "generation_ms": 754.9904000479728,
+    "total_ms": 4213.346900069155,
+    "answer": "ProSound Wireless Earbuds X1 (ELEC-001) has a battery life of 30 hours total (7.5 hours buds + 22.5 hours case).\n\nSources: `faqs/faq-ELEC-001.md`, `products/ELEC-001.md`"
+  },
+  {
+    "session_id": "405fb787-b88e-4ccb-a23f-babf95f83b22",
+    "terminal": "done",
+    "ttft_ms": 2641.2625999655575,
+    "generation_ms": 753.6745000397786,
+    "total_ms": 3394.937100005336,
+    "answer": "ProSound Wireless Earbuds X1 (ELEC-001) offers a battery life of 30 hours total (7.5 hours buds + 22.5 hours case).\n\nSources: `faqs/faq-ELEC-001.md`, `products/ELEC-001.md`"
+  },
+  {
+    "session_id": "a0fa40c0-e5b7-4d52-b7fb-43a262efa617",
+    "terminal": "done",
+    "ttft_ms": 4230.27749999892,
+    "generation_ms": 707.3557999683544,
+    "total_ms": 4937.633299967274,
+    "answer": "The battery life of ProSound Wireless Earbuds X1 is 30 hours total (7.5 hours for the buds + 22.5 hours for the case).\n\nSources: `faqs/faq-ELEC-001.md`, `products/ELEC-001.md`"
+  },
+  {
+    "session_id": "aac21309-51ef-4ff9-9932-94a00ab0a098",
+    "terminal": "done",
+    "ttft_ms": 5745.0968999182805,
+    "generation_ms": 617.8289001109079,
+    "total_ms": 6362.925800029188,
+    "answer": "The battery life of ProSound Wireless Earbuds X1 is 30 hours total (7.5 hours buds + 22.5 hours case).\n\nSources: `faqs/faq-ELEC-001.md`, `products/ELEC-001.md`"
+  },
+  {
+    "session_id": "4d31714d-7ff3-45d5-bf43-ad2887e1ce07",
+    "terminal": "done",
+    "ttft_ms": 4961.761999991722,
+    "generation_ms": 757.8586000017822,
+    "total_ms": 5719.620599993505,
+    "answer": "ProSound Wireless Earbuds X1 (ELEC-001) offers a battery life of 30 hours total (7.5 hours buds + 22.5 hours case).\n\nSources: `faqs/faq-ELEC-001.md`, `products/ELEC-001.md`"
+  }
+]

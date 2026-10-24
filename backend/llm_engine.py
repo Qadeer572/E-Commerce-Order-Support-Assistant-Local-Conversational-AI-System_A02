@@ -19,6 +19,8 @@ from backend.config import (
     TEMPERATURE,
     TOP_P,
     MAX_TOKENS,
+    NUM_THREADS,
+    MODEL_KEEP_ALIVE,
 )
 
 logger = logging.getLogger(__name__)
@@ -52,16 +54,26 @@ class LLMEngine:
         """
         t_start = time.perf_counter()
         first_token = True
+        # Ordinary support answers should be brief. Full catalog lists need room.
+        from backend.conversation_manager.intent_triage import is_catalog_request
+        question = messages[-1]["content"] if messages else ""
+        catalog_list = is_catalog_request(question) and any(
+            word in question.lower().split() for word in ("list", "all", "catalog", "catalogue"))
+        output_limit = min(MAX_TOKENS, 512 if catalog_list else 256)
 
         try:
             async for chunk in await self.client.chat(
                 model   = self.model,
                 messages= messages,
                 stream  = True,
+                keep_alive = MODEL_KEEP_ALIVE,
                 options = {
                     "temperature": TEMPERATURE,
                     "top_p":       TOP_P,
-                    "num_predict": MAX_TOKENS,
+                    "num_predict": output_limit,
+                    "num_ctx": 4096,
+                    "num_gpu": 0,
+                    "num_thread":  NUM_THREADS if NUM_THREADS > 0 else None,
                 },
             ):
                 token = chunk.get("message", {}).get("content", "")
@@ -81,6 +93,18 @@ class LLMEngine:
         except Exception as e:
             logger.error(f"LLMEngine unexpected error: {e}")
             raise LLMEngineError(f"Inference failed: {str(e)}") from e
+
+    async def warmup(self):
+        """Load CPU weights ahead of the first chat; failure leaves chat available."""
+        from backend.conversation_manager.prompt_builder import RULES
+        try:
+            await asyncio.wait_for(self.client.chat(
+                model=self.model,
+                messages=[{"role": "system", "content": RULES}, {"role": "user", "content": "hi"}],
+                keep_alive=MODEL_KEEP_ALIVE,
+                options={"num_predict": 1, "num_ctx": 4096, "num_gpu": 0}), 60)
+        except Exception:
+            logger.warning("Model warmup failed; inference will retry on the next chat")
 
     async def health_check(self) -> dict:
         """

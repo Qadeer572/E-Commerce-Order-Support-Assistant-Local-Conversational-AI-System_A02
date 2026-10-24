@@ -1,0 +1,44 @@
+[
+  {
+    "question": "What is the battery life of ProSound earbuds?",
+    "terminal": "done",
+    "ttft_ms": 2968.6144000152126,
+    "total_ms": 3579.090300016105,
+    "answer": "The battery life of ProSound Wireless Earbuds X1 is 30 hours total (7.5 hours buds + 22.5 hours case).\n\nSources: `faqs/faq-ELEC-001.md`, `products/ELEC-001.md`"
+  },
+  {
+    "question": "i need cheap product",
+    "terminal": "done",
+    "ttft_ms": 35.03889997955412,
+    "total_ms": 45.74109998065978,
+    "answer": "Here are the matching catalog options, lowest price first:\n\n- CablePro Braided USB-C to USB-C Cable 2m | $9.99 | Accessories\n- SlimShield Phone Case \u2014 Universal 6.1\" | $12.99 | Accessories\n- Deep Work by Cal Newport (Paperback) | $14.99 | Books\n- Atomic Habits by James Clear (Hardcover) | $18.99 | Books\n- UrbanFit Classic T-Shirt | $19.99 | Apparel\n\n\nSources: `catalog/catalog-1.md`"
+  },
+  {
+    "question": "list if prodcut",
+    "terminal": "done",
+    "ttft_ms": 37.96290000900626,
+    "total_ms": 45.74869992211461,
+    "answer": "Here are the matching catalog options, lowest price first:\n\n- CablePro Braided USB-C to USB-C Cable 2m | $9.99 | Accessories\n- SlimShield Phone Case \u2014 Universal 6.1\" | $12.99 | Accessories\n- Deep Work by Cal Newport (Paperback) | $14.99 | Books\n- Atomic Habits by James Clear (Hardcover) | $18.99 | Books\n- UrbanFit Classic T-Shirt | $19.99 | Apparel\n\n\nSources: `catalog/catalog-1.md`"
+  },
+  {
+    "question": "what can I buy under $20?",
+    "terminal": "done",
+    "ttft_ms": 34.06370000448078,
+    "total_ms": 40.288400021381676,
+    "answer": "Here are the matching catalog options, lowest price first:\n\n- CablePro Braided USB-C to USB-C Cable 2m | $9.99 | Accessories\n- SlimShield Phone Case \u2014 Universal 6.1\" | $12.99 | Accessories\n- Deep Work by Cal Newport (Paperback) | $14.99 | Books\n- Atomic Habits by James Clear (Hardcover) | $18.99 | Books\n- UrbanFit Classic T-Shirt | $19.99 | Apparel\n\n\nSources: `catalog/catalog-1.md`"
+  },
+  {
+    "question": "do you sell telescopes?",
+    "terminal": "done",
+    "ttft_ms": 27.256199973635375,
+    "total_ms": 903.9298000279814,
+    "answer": "I couldn't find reliable information about that in our store documents. What type of product or budget do you have in mind?"
+  },
+  {
+    "question": "What is the capital of Pakistan?",
+    "terminal": "done",
+    "ttft_ms": 27.36209996510297,
+    "total_ms": 35.233199945650995,
+    "answer": "I'm ShopBot, your order support assistant for this store. I'm set up to help with product questions, order tracking, or our return and shipping policy. Which of those can I help you with today?"
+  }
+]

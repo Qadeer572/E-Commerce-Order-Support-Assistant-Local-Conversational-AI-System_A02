@@ -1,0 +1,61 @@
+{
+  "sessions": [
+    {
+      "terminal": "done",
+      "ttft_ms": 5685.044100042433,
+      "generation_ms": 1769.5157000562176,
+      "total_ms": 7454.55980009865,
+      "answer": "The ProSound Wireless Earbuds X1 offer a total battery life of 30 hours, with 7. 5 hours of battery life for the earbuds and 22. 5 hours for the charging case.\n\nSources: `faqs/faq-ELEC-001.md`, `products/ELEC-001.md`"
+    },
+    {
+      "terminal": "done",
+      "ttft_ms": 7479.796999949031,
+      "generation_ms": 1733.608299982734,
+      "total_ms": 9213.405299931765,
+      "answer": "The ProSound Wireless Earbuds X1 offer a total battery life of 30 hours, with 7. 5 hours of battery life for the earbuds and 22. 5 hours for the case.\n\nSources: `faqs/faq-ELEC-001.md`, `products/ELEC-001.md`"
+    },
+    {
+      "terminal": "done",
+      "ttft_ms": 9246.927900006995,
+      "generation_ms": 1759.3442999059334,
+      "total_ms": 11006.272199912928,
+      "answer": "The ProSound Wireless Earbuds X1 offer a battery life of 30 hours total, which includes 7. 5 hours for the earbuds and 22. 5 hours for the charging case.\n\nSources: `faqs/faq-ELEC-001.md`, `products/ELEC-001.md`"
+    },
+    {
+      "terminal": "done",
+      "ttft_ms": 11049.524399917573,
+      "generation_ms": 1783.7162000359967,
+      "total_ms": 12833.24059995357,
+      "answer": "The ProSound Wireless Earbuds X1 offer a total battery life of 30 hours, with 7. 5 hours of use for the earbuds and 22. 5 hours for the charging case.\n\nSources: `faqs/faq-ELEC-001.md`, `products/ELEC-001.md`"
+    },
+    {
+      "terminal": "done",
+      "ttft_ms": 12868.47100011073,
+      "generation_ms": 1739.3857999704778,
+      "total_ms": 14607.856800081208,
+      "answer": "The ProSound Wireless Earbuds X1 offer a total battery life of 30 hours, with 7. 5 hours of use for the earbuds and 22. 5 hours for the case.\n\nSources: `faqs/faq-ELEC-001.md`, `products/ELEC-001.md`"
+    }
+  ],
+  "health_during_generation": [
+    {
+      "status": 200,
+      "elapsed_ms": 374.68199990689754
+    },
+    {
+      "status": 200,
+      "elapsed_ms": 74.65369999408722
+    },
+    {
+      "status": 200,
+      "elapsed_ms": 56.604000041261315
+    },
+    {
+      "status": 200,
+      "elapsed_ms": 68.70219996199012
+    },
+    {
+      "status": 200,
+      "elapsed_ms": 59.3469999730587
+    }
+  ]
+}

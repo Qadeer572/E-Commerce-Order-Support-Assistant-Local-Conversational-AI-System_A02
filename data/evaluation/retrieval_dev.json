@@ -1,0 +1,309 @@
+[
+  {
+    "query": "What is the battery life of ProSound earbuds?",
+    "expected": [
+      "ELEC-001"
+    ],
+    "doc_types": [
+      "product",
+      "faq"
+    ],
+    "order_id": null
+  },
+  {
+    "query": "How powerful is the VoltCharge charger?",
+    "expected": [
+      "ELEC-002"
+    ],
+    "doc_types": [
+      "product",
+      "faq"
+    ],
+    "order_id": null
+  },
+  {
+    "query": "What resolution is the ClearView webcam?",
+    "expected": [
+      "ELEC-003"
+    ],
+    "doc_types": [
+      "product",
+      "faq"
+    ],
+    "order_id": null
+  },
+  {
+    "query": "How much RAM does PixelTab have?",
+    "expected": [
+      "ELEC-004"
+    ],
+    "doc_types": [
+      "product",
+      "faq"
+    ],
+    "order_id": null
+  },
+  {
+    "query": "What colors are UrbanFit T-shirts?",
+    "expected": [
+      "APRL-001"
+    ],
+    "doc_types": [
+      "product",
+      "faq"
+    ],
+    "order_id": null
+  },
+  {
+    "query": "Is TrailBlazer jacket waterproof?",
+    "expected": [
+      "APRL-002"
+    ],
+    "doc_types": [
+      "product",
+      "faq"
+    ],
+    "order_id": null
+  },
+  {
+    "query": "What is FlexRun shorts material?",
+    "expected": [
+      "APRL-003"
+    ],
+    "doc_types": [
+      "product",
+      "faq"
+    ],
+    "order_id": null
+  },
+  {
+    "query": "What area does CalmBreeze purify?",
+    "expected": [
+      "HOME-001"
+    ],
+    "doc_types": [
+      "product",
+      "faq"
+    ],
+    "order_id": null
+  },
+  {
+    "query": "What is included in BrewMaster coffee kit?",
+    "expected": [
+      "HOME-002"
+    ],
+    "doc_types": [
+      "product",
+      "faq"
+    ],
+    "order_id": null
+  },
+  {
+    "query": "Does NightOwl lamp dim?",
+    "expected": [
+      "HOME-003"
+    ],
+    "doc_types": [
+      "product",
+      "faq"
+    ],
+    "order_id": null
+  },
+  {
+    "query": "What weight range are IronGrip dumbbells?",
+    "expected": [
+      "SPRT-001"
+    ],
+    "doc_types": [
+      "product",
+      "faq"
+    ],
+    "order_id": null
+  },
+  {
+    "query": "How thick is ZenFlow mat?",
+    "expected": [
+      "SPRT-002"
+    ],
+    "doc_types": [
+      "product",
+      "faq"
+    ],
+    "order_id": null
+  },
+  {
+    "query": "Who wrote Deep Work?",
+    "expected": [
+      "BOOK-001"
+    ],
+    "doc_types": [
+      "product",
+      "faq"
+    ],
+    "order_id": null
+  },
+  {
+    "query": "What format is Atomic Habits?",
+    "expected": [
+      "BOOK-002"
+    ],
+    "doc_types": [
+      "product",
+      "faq"
+    ],
+    "order_id": null
+  },
+  {
+    "query": "Does SlimShield fit a 6.1 inch phone?",
+    "expected": [
+      "ACC-001"
+    ],
+    "doc_types": [
+      "product",
+      "faq"
+    ],
+    "order_id": null
+  },
+  {
+    "query": "How long is CablePro cable?",
+    "expected": [
+      "ACC-002"
+    ],
+    "doc_types": [
+      "product",
+      "faq"
+    ],
+    "order_id": null
+  },
+  {
+    "query": "Is SoundBar Mini waterproof?",
+    "expected": [
+      "ELEC-005"
+    ],
+    "doc_types": [
+      "product",
+      "faq"
+    ],
+    "order_id": null
+  },
+  {
+    "query": "What Wi-Fi does SmartPlug use?",
+    "expected": [
+      "HOME-004"
+    ],
+    "doc_types": [
+      "product",
+      "faq"
+    ],
+    "order_id": null
+  },
+  {
+    "query": "Track ORD-10002",
+    "expected": [
+      "ORD-10002"
+    ],
+    "doc_types": [
+      "order"
+    ],
+    "order_id": "ORD-10002"
+  },
+  {
+    "query": "What is your return window?",
+    "expected": [
+      "returns"
+    ],
+    "doc_types": [
+      "policy"
+    ],
+    "order_id": null
+  },
+  {
+    "query": "capital of Pakistan",
+    "expected": [],
+    "doc_types": [
+      "product",
+      "faq"
+    ],
+    "order_id": null
+  },
+  {
+    "query": "write a poem about stars",
+    "expected": [],
+    "doc_types": [
+      "product",
+      "faq"
+    ],
+    "order_id": null
+  },
+  {
+    "query": "solve integral of x squared",
+    "expected": [],
+    "doc_types": [
+      "product",
+      "faq"
+    ],
+    "order_id": null
+  },
+  {
+    "query": "Who won the election?",
+    "expected": [],
+    "doc_types": [
+      "product",
+      "faq"
+    ],
+    "order_id": null
+  },
+  {
+    "query": "How do I repair a car engine?",
+    "expected": [],
+    "doc_types": [
+      "product",
+      "faq"
+    ],
+    "order_id": null
+  },
+  {
+    "query": "What is tomorrow weather?",
+    "expected": [],
+    "doc_types": [
+      "product",
+      "faq"
+    ],
+    "order_id": null
+  },
+  {
+    "query": "Tell me the stock price of Apple",
+    "expected": [],
+    "doc_types": [
+      "product",
+      "faq"
+    ],
+    "order_id": null
+  },
+  {
+    "query": "Can I buy a pet hamster?",
+    "expected": [],
+    "doc_types": [
+      "product",
+      "faq"
+    ],
+    "order_id": null
+  },
+  {
+    "query": "Track ORD-99999",
+    "expected": [],
+    "doc_types": [
+      "order"
+    ],
+    "order_id": "ORD-99999"
+  },
+  {
+    "query": "How do I bake sourdough?",
+    "expected": [],
+    "doc_types": [
+      "product",
+      "faq"
+    ],
+    "order_id": null
+  }
+]

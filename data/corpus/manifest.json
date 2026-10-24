@@ -1,0 +1,572 @@
+{
+  "schema_version": 1,
+  "documents": [
+    {
+      "doc_id": "ELEC-001",
+      "title": "ProSound Wireless Earbuds X1",
+      "source": "products/ELEC-001.md",
+      "doc_type": "product",
+      "sku": "ELEC-001",
+      "order_id": "",
+      "provenance": "data/products.json"
+    },
+    {
+      "doc_id": "faq-ELEC-001",
+      "title": "ProSound Wireless Earbuds X1 questions",
+      "source": "faqs/faq-ELEC-001.md",
+      "doc_type": "faq",
+      "sku": "ELEC-001",
+      "order_id": "",
+      "provenance": "data/products.json"
+    },
+    {
+      "doc_id": "ELEC-002",
+      "title": "VoltCharge 65W USB-C Charger",
+      "source": "products/ELEC-002.md",
+      "doc_type": "product",
+      "sku": "ELEC-002",
+      "order_id": "",
+      "provenance": "data/products.json"
+    },
+    {
+      "doc_id": "faq-ELEC-002",
+      "title": "VoltCharge 65W USB-C Charger questions",
+      "source": "faqs/faq-ELEC-002.md",
+      "doc_type": "faq",
+      "sku": "ELEC-002",
+      "order_id": "",
+      "provenance": "data/products.json"
+    },
+    {
+      "doc_id": "ELEC-003",
+      "title": "ClearView 4K Webcam Pro",
+      "source": "products/ELEC-003.md",
+      "doc_type": "product",
+      "sku": "ELEC-003",
+      "order_id": "",
+      "provenance": "data/products.json"
+    },
+    {
+      "doc_id": "faq-ELEC-003",
+      "title": "ClearView 4K Webcam Pro questions",
+      "source": "faqs/faq-ELEC-003.md",
+      "doc_type": "faq",
+      "sku": "ELEC-003",
+      "order_id": "",
+      "provenance": "data/products.json"
+    },
+    {
+      "doc_id": "ELEC-004",
+      "title": "PixelTab 10 Android Tablet",
+      "source": "products/ELEC-004.md",
+      "doc_type": "product",
+      "sku": "ELEC-004",
+      "order_id": "",
+      "provenance": "data/products.json"
+    },
+    {
+      "doc_id": "faq-ELEC-004",
+      "title": "PixelTab 10 Android Tablet questions",
+      "source": "faqs/faq-ELEC-004.md",
+      "doc_type": "faq",
+      "sku": "ELEC-004",
+      "order_id": "",
+      "provenance": "data/products.json"
+    },
+    {
+      "doc_id": "APRL-001",
+      "title": "UrbanFit Classic T-Shirt",
+      "source": "products/APRL-001.md",
+      "doc_type": "product",
+      "sku": "APRL-001",
+      "order_id": "",
+      "provenance": "data/products.json"
+    },
+    {
+      "doc_id": "faq-APRL-001",
+      "title": "UrbanFit Classic T-Shirt questions",
+      "source": "faqs/faq-APRL-001.md",
+      "doc_type": "faq",
+      "sku": "APRL-001",
+      "order_id": "",
+      "provenance": "data/products.json"
+    },
+    {
+      "doc_id": "APRL-002",
+      "title": "TrailBlazer Waterproof Jacket",
+      "source": "products/APRL-002.md",
+      "doc_type": "product",
+      "sku": "APRL-002",
+      "order_id": "",
+      "provenance": "data/products.json"
+    },
+    {
+      "doc_id": "faq-APRL-002",
+      "title": "TrailBlazer Waterproof Jacket questions",
+      "source": "faqs/faq-APRL-002.md",
+      "doc_type": "faq",
+      "sku": "APRL-002",
+      "order_id": "",
+      "provenance": "data/products.json"
+    },
+    {
+      "doc_id": "APRL-003",
+      "title": "FlexRun Athletic Shorts",
+      "source": "products/APRL-003.md",
+      "doc_type": "product",
+      "sku": "APRL-003",
+      "order_id": "",
+      "provenance": "data/products.json"
+    },
+    {
+      "doc_id": "faq-APRL-003",
+      "title": "FlexRun Athletic Shorts questions",
+      "source": "faqs/faq-APRL-003.md",
+      "doc_type": "faq",
+      "sku": "APRL-003",
+      "order_id": "",
+      "provenance": "data/products.json"
+    },
+    {
+      "doc_id": "HOME-001",
+      "title": "CalmBreeze Air Purifier S300",
+      "source": "products/HOME-001.md",
+      "doc_type": "product",
+      "sku": "HOME-001",
+      "order_id": "",
+      "provenance": "data/products.json"
+    },
+    {
+      "doc_id": "faq-HOME-001",
+      "title": "CalmBreeze Air Purifier S300 questions",
+      "source": "faqs/faq-HOME-001.md",
+      "doc_type": "faq",
+      "sku": "HOME-001",
+      "order_id": "",
+      "provenance": "data/products.json"
+    },
+    {
+      "doc_id": "HOME-002",
+      "title": "BrewMaster Pour-Over Coffee Kit",
+      "source": "products/HOME-002.md",
+      "doc_type": "product",
+      "sku": "HOME-002",
+      "order_id": "",
+      "provenance": "data/products.json"
+    },
+    {
+      "doc_id": "faq-HOME-002",
+      "title": "BrewMaster Pour-Over Coffee Kit questions",
+      "source": "faqs/faq-HOME-002.md",
+      "doc_type": "faq",
+      "sku": "HOME-002",
+      "order_id": "",
+      "provenance": "data/products.json"
+    },
+    {
+      "doc_id": "HOME-003",
+      "title": "NightOwl LED Desk Lamp",
+      "source": "products/HOME-003.md",
+      "doc_type": "product",
+      "sku": "HOME-003",
+      "order_id": "",
+      "provenance": "data/products.json"
+    },
+    {
+      "doc_id": "faq-HOME-003",
+      "title": "NightOwl LED Desk Lamp questions",
+      "source": "faqs/faq-HOME-003.md",
+      "doc_type": "faq",
+      "sku": "HOME-003",
+      "order_id": "",
+      "provenance": "data/products.json"
+    },
+    {
+      "doc_id": "SPRT-001",
+      "title": "IronGrip Adjustable Dumbbells 5\u201352.5 lb",
+      "source": "products/SPRT-001.md",
+      "doc_type": "product",
+      "sku": "SPRT-001",
+      "order_id": "",
+      "provenance": "data/products.json"
+    },
+    {
+      "doc_id": "faq-SPRT-001",
+      "title": "IronGrip Adjustable Dumbbells 5\u201352.5 lb questions",
+      "source": "faqs/faq-SPRT-001.md",
+      "doc_type": "faq",
+      "sku": "SPRT-001",
+      "order_id": "",
+      "provenance": "data/products.json"
+    },
+    {
+      "doc_id": "SPRT-002",
+      "title": "ZenFlow Yoga Mat Pro",
+      "source": "products/SPRT-002.md",
+      "doc_type": "product",
+      "sku": "SPRT-002",
+      "order_id": "",
+      "provenance": "data/products.json"
+    },
+    {
+      "doc_id": "faq-SPRT-002",
+      "title": "ZenFlow Yoga Mat Pro questions",
+      "source": "faqs/faq-SPRT-002.md",
+      "doc_type": "faq",
+      "sku": "SPRT-002",
+      "order_id": "",
+      "provenance": "data/products.json"
+    },
+    {
+      "doc_id": "BOOK-001",
+      "title": "Deep Work by Cal Newport (Paperback)",
+      "source": "products/BOOK-001.md",
+      "doc_type": "product",
+      "sku": "BOOK-001",
+      "order_id": "",
+      "provenance": "data/products.json"
+    },
+    {
+      "doc_id": "faq-BOOK-001",
+      "title": "Deep Work by Cal Newport (Paperback) questions",
+      "source": "faqs/faq-BOOK-001.md",
+      "doc_type": "faq",
+      "sku": "BOOK-001",
+      "order_id": "",
+      "provenance": "data/products.json"
+    },
+    {
+      "doc_id": "BOOK-002",
+      "title": "Atomic Habits by James Clear (Hardcover)",
+      "source": "products/BOOK-002.md",
+      "doc_type": "product",
+      "sku": "BOOK-002",
+      "order_id": "",
+      "provenance": "data/products.json"
+    },
+    {
+      "doc_id": "faq-BOOK-002",
+      "title": "Atomic Habits by James Clear (Hardcover) questions",
+      "source": "faqs/faq-BOOK-002.md",
+      "doc_type": "faq",
+      "sku": "BOOK-002",
+      "order_id": "",
+      "provenance": "data/products.json"
+    },
+    {
+      "doc_id": "ACC-001",
+      "title": "SlimShield Phone Case \u2014 Universal 6.1\"",
+      "source": "products/ACC-001.md",
+      "doc_type": "product",
+      "sku": "ACC-001",
+      "order_id": "",
+      "provenance": "data/products.json"
+    },
+    {
+      "doc_id": "faq-ACC-001",
+      "title": "SlimShield Phone Case \u2014 Universal 6.1\" questions",
+      "source": "faqs/faq-ACC-001.md",
+      "doc_type": "faq",
+      "sku": "ACC-001",
+      "order_id": "",
+      "provenance": "data/products.json"
+    },
+    {
+      "doc_id": "ACC-002",
+      "title": "CablePro Braided USB-C to USB-C Cable 2m",
+      "source": "products/ACC-002.md",
+      "doc_type": "product",
+      "sku": "ACC-002",
+      "order_id": "",
+      "provenance": "data/products.json"
+    },
+    {
+      "doc_id": "faq-ACC-002",
+      "title": "CablePro Braided USB-C to USB-C Cable 2m questions",
+      "source": "faqs/faq-ACC-002.md",
+      "doc_type": "faq",
+      "sku": "ACC-002",
+      "order_id": "",
+      "provenance": "data/products.json"
+    },
+    {
+      "doc_id": "ELEC-005",
+      "title": "SoundBar Mini BT5 Portable Speaker",
+      "source": "products/ELEC-005.md",
+      "doc_type": "product",
+      "sku": "ELEC-005",
+      "order_id": "",
+      "provenance": "data/products.json"
+    },
+    {
+      "doc_id": "faq-ELEC-005",
+      "title": "SoundBar Mini BT5 Portable Speaker questions",
+      "source": "faqs/faq-ELEC-005.md",
+      "doc_type": "faq",
+      "sku": "ELEC-005",
+      "order_id": "",
+      "provenance": "data/products.json"
+    },
+    {
+      "doc_id": "HOME-004",
+      "title": "SmartPlug Mini Wi-Fi Outlet (2-Pack)",
+      "source": "products/HOME-004.md",
+      "doc_type": "product",
+      "sku": "HOME-004",
+      "order_id": "",
+      "provenance": "data/products.json"
+    },
+    {
+      "doc_id": "faq-HOME-004",
+      "title": "SmartPlug Mini Wi-Fi Outlet (2-Pack) questions",
+      "source": "faqs/faq-HOME-004.md",
+      "doc_type": "faq",
+      "sku": "HOME-004",
+      "order_id": "",
+      "provenance": "data/products.json"
+    },
+    {
+      "doc_id": "ORD-10001",
+      "title": "Order ORD-10001 status and items",
+      "source": "orders/ORD-10001.md",
+      "doc_type": "order",
+      "sku": "",
+      "order_id": "ORD-10001",
+      "provenance": "data/orders.json"
+    },
+    {
+      "doc_id": "ORD-10002",
+      "title": "Order ORD-10002 status and items",
+      "source": "orders/ORD-10002.md",
+      "doc_type": "order",
+      "sku": "",
+      "order_id": "ORD-10002",
+      "provenance": "data/orders.json"
+    },
+    {
+      "doc_id": "ORD-10003",
+      "title": "Order ORD-10003 status and items",
+      "source": "orders/ORD-10003.md",
+      "doc_type": "order",
+      "sku": "",
+      "order_id": "ORD-10003",
+      "provenance": "data/orders.json"
+    },
+    {
+      "doc_id": "ORD-10004",
+      "title": "Order ORD-10004 status and items",
+      "source": "orders/ORD-10004.md",
+      "doc_type": "order",
+      "sku": "",
+      "order_id": "ORD-10004",
+      "provenance": "data/orders.json"
+    },
+    {
+      "doc_id": "ORD-10005",
+      "title": "Order ORD-10005 status and items",
+      "source": "orders/ORD-10005.md",
+      "doc_type": "order",
+      "sku": "",
+      "order_id": "ORD-10005",
+      "provenance": "data/orders.json"
+    },
+    {
+      "doc_id": "ORD-10006",
+      "title": "Order ORD-10006 status and items",
+      "source": "orders/ORD-10006.md",
+      "doc_type": "order",
+      "sku": "",
+      "order_id": "ORD-10006",
+      "provenance": "data/orders.json"
+    },
+    {
+      "doc_id": "ORD-10007",
+      "title": "Order ORD-10007 status and items",
+      "source": "orders/ORD-10007.md",
+      "doc_type": "order",
+      "sku": "",
+      "order_id": "ORD-10007",
+      "provenance": "data/orders.json"
+    },
+    {
+      "doc_id": "ORD-10008",
+      "title": "Order ORD-10008 status and items",
+      "source": "orders/ORD-10008.md",
+      "doc_type": "order",
+      "sku": "",
+      "order_id": "ORD-10008",
+      "provenance": "data/orders.json"
+    },
+    {
+      "doc_id": "ORD-10009",
+      "title": "Order ORD-10009 status and items",
+      "source": "orders/ORD-10009.md",
+      "doc_type": "order",
+      "sku": "",
+      "order_id": "ORD-10009",
+      "provenance": "data/orders.json"
+    },
+    {
+      "doc_id": "ORD-10010",
+      "title": "Order ORD-10010 status and items",
+      "source": "orders/ORD-10010.md",
+      "doc_type": "order",
+      "sku": "",
+      "order_id": "ORD-10010",
+      "provenance": "data/orders.json"
+    },
+    {
+      "doc_id": "ORD-10011",
+      "title": "Order ORD-10011 status and items",
+      "source": "orders/ORD-10011.md",
+      "doc_type": "order",
+      "sku": "",
+      "order_id": "ORD-10011",
+      "provenance": "data/orders.json"
+    },
+    {
+      "doc_id": "ORD-10012",
+      "title": "Order ORD-10012 status and items",
+      "source": "orders/ORD-10012.md",
+      "doc_type": "order",
+      "sku": "",
+      "order_id": "ORD-10012",
+      "provenance": "data/orders.json"
+    },
+    {
+      "doc_id": "ORD-10013",
+      "title": "Order ORD-10013 status and items",
+      "source": "orders/ORD-10013.md",
+      "doc_type": "order",
+      "sku": "",
+      "order_id": "ORD-10013",
+      "provenance": "data/orders.json"
+    },
+    {
+      "doc_id": "ORD-10014",
+      "title": "Order ORD-10014 status and items",
+      "source": "orders/ORD-10014.md",
+      "doc_type": "order",
+      "sku": "",
+      "order_id": "ORD-10014",
+      "provenance": "data/orders.json"
+    },
+    {
+      "doc_id": "ORD-10015",
+      "title": "Order ORD-10015 status and items",
+      "source": "orders/ORD-10015.md",
+      "doc_type": "order",
+      "sku": "",
+      "order_id": "ORD-10015",
+      "provenance": "data/orders.json"
+    },
+    {
+      "doc_id": "returns",
+      "title": "Return eligibility",
+      "source": "policies/returns.md",
+      "doc_type": "policy",
+      "sku": "",
+      "order_id": "",
+      "provenance": "data/policy.md"
+    },
+    {
+      "doc_id": "refunds",
+      "title": "Refund timeline and limits",
+      "source": "policies/refunds.md",
+      "doc_type": "policy",
+      "sku": "",
+      "order_id": "",
+      "provenance": "data/policy.md"
+    },
+    {
+      "doc_id": "exchanges",
+      "title": "Size and color exchanges",
+      "source": "policies/exchanges.md",
+      "doc_type": "policy",
+      "sku": "",
+      "order_id": "",
+      "provenance": "data/policy.md"
+    },
+    {
+      "doc_id": "shipping-fees",
+      "title": "Shipping costs",
+      "source": "policies/shipping-fees.md",
+      "doc_type": "policy",
+      "sku": "",
+      "order_id": "",
+      "provenance": "data/policy.md"
+    },
+    {
+      "doc_id": "delivery",
+      "title": "Delivery and processing times",
+      "source": "policies/delivery.md",
+      "doc_type": "policy",
+      "sku": "",
+      "order_id": "",
+      "provenance": "data/policy.md"
+    },
+    {
+      "doc_id": "destinations",
+      "title": "Shipping destinations and restrictions",
+      "source": "policies/destinations.md",
+      "doc_type": "policy",
+      "sku": "",
+      "order_id": "",
+      "provenance": "data/policy.md"
+    },
+    {
+      "doc_id": "damaged",
+      "title": "Damaged or defective items",
+      "source": "policies/damaged.md",
+      "doc_type": "policy",
+      "sku": "",
+      "order_id": "",
+      "provenance": "data/policy.md"
+    },
+    {
+      "doc_id": "cancellation",
+      "title": "Cancellation and address changes",
+      "source": "policies/cancellation.md",
+      "doc_type": "policy",
+      "sku": "",
+      "order_id": "",
+      "provenance": "data/policy.md"
+    },
+    {
+      "doc_id": "tracking",
+      "title": "Tracking and missing deliveries",
+      "source": "policies/tracking.md",
+      "doc_type": "policy",
+      "sku": "",
+      "order_id": "",
+      "provenance": "data/policy.md"
+    },
+    {
+      "doc_id": "catalog-1",
+      "title": "Store product catalog prices and budget shopping options 1",
+      "source": "catalog/catalog-1.md",
+      "doc_type": "catalog",
+      "sku": "",
+      "order_id": "",
+      "provenance": "data/products.json"
+    },
+    {
+      "doc_id": "catalog-2",
+      "title": "Store product catalog prices and budget shopping options 2",
+      "source": "catalog/catalog-2.md",
+      "doc_type": "catalog",
+      "sku": "",
+      "order_id": "",
+      "provenance": "data/products.json"
+    },
+    {
+      "doc_id": "catalog-3",
+      "title": "Store product catalog prices and budget shopping options 3",
+      "source": "catalog/catalog-3.md",
+      "doc_type": "catalog",
+      "sku": "",
+      "order_id": "",
+      "provenance": "data/products.json"
+    }
+  ]
+}

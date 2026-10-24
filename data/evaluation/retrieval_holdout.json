@@ -1,0 +1,309 @@
+[
+  {
+    "query": "ProSound X1 ANC and Bluetooth version",
+    "expected": [
+      "ELEC-001"
+    ],
+    "doc_types": [
+      "product",
+      "faq"
+    ],
+    "order_id": null
+  },
+  {
+    "query": "VoltCharge USB-A and USB-C ports",
+    "expected": [
+      "ELEC-002"
+    ],
+    "doc_types": [
+      "product",
+      "faq"
+    ],
+    "order_id": null
+  },
+  {
+    "query": "ClearView autofocus microphone specs",
+    "expected": [
+      "ELEC-003"
+    ],
+    "doc_types": [
+      "product",
+      "faq"
+    ],
+    "order_id": null
+  },
+  {
+    "query": "PixelTab storage capacity and Android version",
+    "expected": [
+      "ELEC-004"
+    ],
+    "doc_types": [
+      "product",
+      "faq"
+    ],
+    "order_id": null
+  },
+  {
+    "query": "UrbanFit Classic shirt available sizes",
+    "expected": [
+      "APRL-001"
+    ],
+    "doc_types": [
+      "product",
+      "faq"
+    ],
+    "order_id": null
+  },
+  {
+    "query": "TrailBlazer jacket fabric and care",
+    "expected": [
+      "APRL-002"
+    ],
+    "doc_types": [
+      "product",
+      "faq"
+    ],
+    "order_id": null
+  },
+  {
+    "query": "FlexRun athletic shorts sizes and price",
+    "expected": [
+      "APRL-003"
+    ],
+    "doc_types": [
+      "product",
+      "faq"
+    ],
+    "order_id": null
+  },
+  {
+    "query": "CalmBreeze S300 filters",
+    "expected": [
+      "HOME-001"
+    ],
+    "doc_types": [
+      "product",
+      "faq"
+    ],
+    "order_id": null
+  },
+  {
+    "query": "BrewMaster pour-over capacity",
+    "expected": [
+      "HOME-002"
+    ],
+    "doc_types": [
+      "product",
+      "faq"
+    ],
+    "order_id": null
+  },
+  {
+    "query": "NightOwl desk light color temperatures",
+    "expected": [
+      "HOME-003"
+    ],
+    "doc_types": [
+      "product",
+      "faq"
+    ],
+    "order_id": null
+  },
+  {
+    "query": "IronGrip dumbbell adjustable weights",
+    "expected": [
+      "SPRT-001"
+    ],
+    "doc_types": [
+      "product",
+      "faq"
+    ],
+    "order_id": null
+  },
+  {
+    "query": "ZenFlow yoga mat dimensions",
+    "expected": [
+      "SPRT-002"
+    ],
+    "doc_types": [
+      "product",
+      "faq"
+    ],
+    "order_id": null
+  },
+  {
+    "query": "Deep Work paperback page count",
+    "expected": [
+      "BOOK-001"
+    ],
+    "doc_types": [
+      "product",
+      "faq"
+    ],
+    "order_id": null
+  },
+  {
+    "query": "Atomic Habits hardcover price",
+    "expected": [
+      "BOOK-002"
+    ],
+    "doc_types": [
+      "product",
+      "faq"
+    ],
+    "order_id": null
+  },
+  {
+    "query": "SlimShield phone case colors",
+    "expected": [
+      "ACC-001"
+    ],
+    "doc_types": [
+      "product",
+      "faq"
+    ],
+    "order_id": null
+  },
+  {
+    "query": "CablePro USB-C charging power",
+    "expected": [
+      "ACC-002"
+    ],
+    "doc_types": [
+      "product",
+      "faq"
+    ],
+    "order_id": null
+  },
+  {
+    "query": "SoundBar Mini Bluetooth speaker battery",
+    "expected": [
+      "ELEC-005"
+    ],
+    "doc_types": [
+      "product",
+      "faq"
+    ],
+    "order_id": null
+  },
+  {
+    "query": "SmartPlug Mini maximum load and voice assistants",
+    "expected": [
+      "HOME-004"
+    ],
+    "doc_types": [
+      "product",
+      "faq"
+    ],
+    "order_id": null
+  },
+  {
+    "query": "Where is ORD-10013?",
+    "expected": [
+      "ORD-10013"
+    ],
+    "doc_types": [
+      "order"
+    ],
+    "order_id": "ORD-10013"
+  },
+  {
+    "query": "How long does a refund take?",
+    "expected": [
+      "refunds"
+    ],
+    "doc_types": [
+      "policy"
+    ],
+    "order_id": null
+  },
+  {
+    "query": "Explain quantum gravity",
+    "expected": [],
+    "doc_types": [
+      "product",
+      "faq"
+    ],
+    "order_id": null
+  },
+  {
+    "query": "What is the population of Japan?",
+    "expected": [],
+    "doc_types": [
+      "product",
+      "faq"
+    ],
+    "order_id": null
+  },
+  {
+    "query": "Write Java code to sort numbers",
+    "expected": [],
+    "doc_types": [
+      "product",
+      "faq"
+    ],
+    "order_id": null
+  },
+  {
+    "query": "Translate a French poem",
+    "expected": [],
+    "doc_types": [
+      "product",
+      "faq"
+    ],
+    "order_id": null
+  },
+  {
+    "query": "Recommend investments",
+    "expected": [],
+    "doc_types": [
+      "product",
+      "faq"
+    ],
+    "order_id": null
+  },
+  {
+    "query": "What causes thunderstorms?",
+    "expected": [],
+    "doc_types": [
+      "product",
+      "faq"
+    ],
+    "order_id": null
+  },
+  {
+    "query": "How to grow tomatoes?",
+    "expected": [],
+    "doc_types": [
+      "product",
+      "faq"
+    ],
+    "order_id": null
+  },
+  {
+    "query": "Who invented calculus?",
+    "expected": [],
+    "doc_types": [
+      "product",
+      "faq"
+    ],
+    "order_id": null
+  },
+  {
+    "query": "How far away is Mars?",
+    "expected": [],
+    "doc_types": [
+      "product",
+      "faq"
+    ],
+    "order_id": null
+  },
+  {
+    "query": "Where is ORD-54321?",
+    "expected": [],
+    "doc_types": [
+      "order"
+    ],
+    "order_id": "ORD-54321"
+  }
+]

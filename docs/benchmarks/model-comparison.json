@@ -1,0 +1,44 @@
+[
+  {
+    "model": "qwen2.5:0.5b",
+    "question": "i need cheap product",
+    "ttft_ms": 1947.435099980794,
+    "total_ms": 4543.071699910797,
+    "answer": "Here are some cheap products from the retrieved evidence:\n\n- ACC-002 | CablePro Braided USB-C to USB-C Cable 2m | $9.99 | Accessories\n- ACC-001 | SlimShield Phone Case \u2014 Universal 6.1\" | $12.99 | Accessories\n- BOOK-001 | Deep Work by Cal Newport (Paperback) | $14.99 | Books\n- BOOK-002 | Atomic Habits by James Clear (Hardcover) | $18.99 | Books\n- APRL-001 | UrbanFit Classic T-Shirt | $19.99 | Apparel\n\nSources: `catalog/catalog-1.md`"
+  },
+  {
+    "model": "qwen2.5:0.5b",
+    "question": "What is the battery life of ProSound earbuds?",
+    "ttft_ms": 2873.570999945514,
+    "total_ms": 4119.067099993117,
+    "answer": "ProSound Wireless Earbuds X1 (ELEC-001) has a battery life of 30 hours total (7.5 hours buds + 22.5 hours case).\n\nSources: `faqs/faq-ELEC-001.md`, `products/ELEC-001.md`"
+  },
+  {
+    "model": "qwen2.5:0.5b",
+    "question": "what can I buy under $20?",
+    "ttft_ms": 293.3469000272453,
+    "total_ms": 1856.553699937649,
+    "answer": "- ACC-002 | CablePro Braided USB-C to USB-C Cable 2m | $9.99 | Accessories\n- APRL-001 | UrbanFit Classic T-Shirt | $19.99 | Apparel\n\nSources: `catalog/catalog-1.md`"
+  },
+  {
+    "model": "qwen2.5:1.5b",
+    "question": "i need cheap product",
+    "ttft_ms": 2223.2151000062004,
+    "total_ms": 3802.9868999728933,
+    "answer": "ACC-002 | CablePro Braided USB-C to USB-C Cable 2m | $9.99 | Accessories\n\nSources: `catalog/catalog-1.md`"
+  },
+  {
+    "model": "qwen2.5:1.5b",
+    "question": "What is the battery life of ProSound earbuds?",
+    "ttft_ms": 4471.055899979547,
+    "total_ms": 7010.982800042257,
+    "answer": "The ProSound Wireless Earbuds X1 offer a total battery life of 30 hours, with 7.5 hours of use per earbud and a 22.5-hour battery life for the case.\n\nSources: `faqs/faq-ELEC-001.md`, `products/ELEC-001.md`"
+  },
+  {
+    "model": "qwen2.5:1.5b",
+    "question": "what can I buy under $20?",
+    "ttft_ms": 327.3577999789268,
+    "total_ms": 1717.4731000559404,
+    "answer": "You can buy the SlimShield Phone Case \u2014 Universal 6.1\" for $12.99.\n\nSources: `catalog/catalog-1.md`"
+  }
+]

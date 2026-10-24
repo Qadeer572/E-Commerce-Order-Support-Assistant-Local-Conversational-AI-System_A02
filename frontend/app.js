@@ -624,9 +624,16 @@ function updateCapabilityHighlight(intent) {
 // ── Client-side intent detection (lightweight, for immediate UI feedback) ─────
 function detectIntentFromText(text) {
   const t = text.toLowerCase();
+  // Check for order tracking first (high priority)
   if (/\border\b|\btrack|\bstatus\b|\bshipment|\bdeliver|\bord-\d/.test(t)) return 'ORDER_TRACKING';
+  // Check for returns/policy
   if (/\breturn\b|\brefund|\bexchange|\bpolicy|\bshipping cost/.test(t)) return 'RETURNS_POLICY';
+  // Check for product queries
   if (/\bprice|\bstock|\bspec|\bcompare|\bbuy|\bsell|\bproduct|\bitem/.test(t)) return 'PRODUCT_QUERY';
+  // For very short messages (likely greetings or personal info), return null to let backend handle it
+  if (text.split().length <= 3) {
+    return null;
+  }
   return null;
 }
 

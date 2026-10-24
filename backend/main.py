@@ -27,6 +27,10 @@ from backend.llm_engine import LLMEngine, LLMEngineError
 from backend.conversation_manager.session import SessionStore, Turn
 from backend.conversation_manager import ConversationManager
 from backend import history_store
+from backend.config import VECTOR_DIR, MODEL_DIR
+from backend.retrieval.embeddings import LocalEmbedder, load_generation_tokenizer, ConservativeTokenizer
+from backend.retrieval.store import VectorStore
+from backend.retrieval.service import Retriever
 
 # ── Logging ───────────────────────────────────────────────────────────────────
 logging.basicConfig(
@@ -50,8 +54,26 @@ async def lifespan(app: FastAPI):
 
     logger.info("ShopBot starting up…")
     _llm_engine    = LLMEngine()
+    warmup = asyncio.create_task(_llm_engine.warmup()) if hasattr(_llm_engine, "warmup") else None
     _session_store = SessionStore()
-    _conv_manager  = ConversationManager(_llm_engine)
+    def load_rag():
+        try:
+            tokenizer = load_generation_tokenizer()
+        except Exception:
+            logger.warning("Generation tokenizer unavailable; using conservative fallback count")
+            return Retriever(), ConservativeTokenizer()
+        try:
+            embedder = LocalEmbedder()
+            store = VectorStore(VECTOR_DIR, reader=True)
+            if store.manifest["settings"]["model_revision"] != embedder.revision:
+                store.close()
+                raise RuntimeError("Index model revision mismatch")
+            return Retriever(embedder, store), tokenizer
+        except Exception:
+            logger.exception("RAG unavailable; chat will use safe fallbacks")
+            return Retriever(), tokenizer
+    retriever, tokenizer = await asyncio.to_thread(load_rag)
+    _conv_manager = ConversationManager(_llm_engine, retriever, tokenizer)
 
     # Periodic session cleanup task (every 10 minutes)
     async def _cleanup_task():
@@ -77,6 +99,10 @@ async def lifespan(app: FastAPI):
     yield  # — server is running —
 
     cleanup.cancel()
+    if warmup:
+        warmup.cancel()
+        await asyncio.gather(warmup, return_exceptions=True)
+    await asyncio.to_thread(retriever.close)
     logger.info("ShopBot shutting down.")
 
 
@@ -121,6 +147,7 @@ async def health():
         "service": "ShopBot",
         "active_sessions": _session_store.count(),
         "llm": llm_health,
+        "rag": {"ready": _conv_manager.retriever.ready if hasattr(_conv_manager.retriever, "ready") else True},
     }
 
 
@@ -138,7 +165,9 @@ async def reset_session(session_id: str):
     session = _session_store.get(session_id)
     if session is None:
         raise HTTPException(status_code=404, detail="Session not found or expired")
-    session.reset()
+    async with session.lock:
+        session.reset()
+        await asyncio.to_thread(history_store.save_session, session)
     logger.info(f"Reset session {session_id}")
     return {"status": "reset", "session_id": session_id}
 
@@ -146,7 +175,7 @@ async def reset_session(session_id: str):
 @app.get("/api/sessions")
 async def list_sessions():
     """List past conversations (for the frontend history sidebar)."""
-    return {"sessions": history_store.list_sessions()}
+    return {"sessions": await asyncio.to_thread(history_store.list_sessions)}
 
 
 @app.get("/api/session/{session_id}/history")
@@ -156,16 +185,14 @@ async def get_session_history(session_id: str):
     live SessionStore so the conversation can continue with full context if
     the user keeps chatting in it.
     """
-    messages = history_store.get_session_messages(session_id)
+    messages = await asyncio.to_thread(history_store.get_session_messages, session_id)
     if messages is None:
         raise HTTPException(status_code=404, detail="No history found for this session")
 
     session = _session_store.get_or_create(session_id)
-    if not session.history and messages:
-        session.history.extend(
-            Turn(role=m["role"], content=m["content"], timestamp=m["timestamp"])
-            for m in messages
-        )
+    async with session.lock:
+        if not session.history and messages:
+            await asyncio.to_thread(history_store.restore_session, session)
 
     return {"session_id": session_id, "messages": messages}
 
@@ -173,7 +200,7 @@ async def get_session_history(session_id: str):
 @app.delete("/api/history/{session_id}")
 async def delete_session_history(session_id: str):
     """Permanently remove a conversation from the history sidebar."""
-    removed = history_store.delete_session(session_id)
+    removed = await asyncio.to_thread(history_store.delete_session, session_id)
     _session_store.delete(session_id)
     if not removed:
         raise HTTPException(status_code=404, detail="Session not found in history")
@@ -213,6 +240,10 @@ async def websocket_chat(websocket: WebSocket):
                 await _send_error(websocket, "Invalid JSON — expected {session_id, message}")
                 continue
 
+            if not isinstance(data, dict) or not isinstance(data.get("session_id", ""), str) or not isinstance(data.get("message", ""), str):
+                await _send_error(websocket, "Expected string session_id and message fields")
+                continue
+
             session_id = data.get("session_id", "").strip()
             user_msg   = data.get("message", "").strip()
 
@@ -235,17 +266,20 @@ async def websocket_chat(websocket: WebSocket):
                 async for token in _conv_manager.handle_turn(session, user_msg):
                     await websocket.send_json({"type": "token", "content": token})
 
+                async with session.lock:
+                    await asyncio.to_thread(history_store.save_session, session)
                 await websocket.send_json({"type": "done", "content": ""})
-                history_store.save_session(session)
                 logger.info(f"[{session_id[:8]}] Response complete")
 
             except LLMEngineError as e:
                 logger.error(f"LLMEngineError in session {session_id[:8]}: {e}")
-                history_store.save_session(session)
+                async with session.lock:
+                    await asyncio.to_thread(history_store.save_session, session)
                 await _send_error(websocket, f"Model error: {e}")
             except Exception as e:
                 logger.exception(f"Unexpected error in session {session_id[:8]}: {e}")
-                history_store.save_session(session)
+                async with session.lock:
+                    await asyncio.to_thread(history_store.save_session, session)
                 await _send_error(websocket, "An unexpected error occurred. Please try again.")
 
     except Exception as e:

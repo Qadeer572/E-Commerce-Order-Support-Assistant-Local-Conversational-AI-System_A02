@@ -34,6 +34,7 @@ logs/
 
 # Persisted chat history (runtime-generated, not seed data)
 data/chat_history.json
+data/chat_history.tmp
 
 # Ollama / model cache (don't commit model weights)
 *.gguf
@@ -47,3 +48,10 @@ htmlcov/
 
 # Jupyter
 .ipynb_checkpoints/
+# Local RAG artifacts
+models/
+data/vector_store/
+.superpowers/
+%SystemDrive%/
+.pytest-tmp/
+artifacts/

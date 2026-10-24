@@ -1,388 +1,162 @@
-# E-Commerce Order Support Assistant
-### Local Conversational AI System — NLP Assignment 1
+# ShopBot — Assignment 2: Offline Retrieval-Augmented Support
 
-> **Course**: Natural Language Processing (Assignment 1 of 3)  
-> **Team**: Sheharyar & Qadeer Raza (i230097, i233059)  
-> **Domain**: E-Commerce Order Support  
-
----
-
-## Table of Contents
-1. [Project Overview](#project-overview)
-2. [Architecture](#architecture)
-3. [Model Selection & Justification](#model-selection--justification)
-4. [Conversation Flow Design](#conversation-flow-design)
-5. [Context Memory Management](#context-memory-management)
-6. [Example Dialogues](#example-dialogues)
-7. [Setup Instructions](#setup-instructions)
-8. [API Documentation](#api-documentation)
-9. [Latency Benchmarks](#latency-benchmarks)
-10. [Known Limitations](#known-limitations)
-11. [Bonus — UX/Persona Polish](#bonus--uxpersona-polish)
-12. [Team & Attribution](#team--attribution)
-
----
-
-## Project Overview
-
-**ShopBot** is a fully local, CPU-only conversational AI assistant that helps customers with three categories of e-commerce support:
-
-| Domain | What ShopBot Can Do |
-|--------|---------------------|
-| 🛍️ **Product Questions** | Availability, specs, pricing, sizing/variants, comparisons within our 18-SKU mock catalog |
-| 📦 **Order Tracking** | Status lookup, shipment stage, estimated delivery, tracking numbers (against mock order DB) |
-| 🔄 **Returns, Refunds & Shipping Policy** | Return window, refund timeline, exchange rules, shipping costs and timelines |
-
-ShopBot **will not** answer questions outside this domain. Off-topic queries receive a polite in-character redirect.
-
-**Hard constraints satisfied**:
-- ✅ Fully local inference — no cloud APIs
-- ✅ Quantized Q4 open-weight model (Qwen2.5 1.5B)
-- ✅ No tool-calling, no RAG, no agents
-- ✅ CPU-only inference
-
----
+ShopBot answers product, fictional order, return, refund, exchange and shipping questions using local documents. It streams responses through FastAPI and Ollama to the existing light chat UI. Greetings are conversational; unrelated requests such as “What is the capital of Pakistan?” are redirected without answering.
 
 ## Architecture
 
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                        Web Browser                              │
-│     Frontend  (HTML / CSS / JS — streaming chat UI)             │
-│                 ws://localhost:8000/ws/chat                      │
-└────────────────────────────┬────────────────────────────────────┘
-                             │ WebSocket (JSON streaming)
-┌────────────────────────────▼────────────────────────────────────┐
-│                  FastAPI Backend  (Python 3.11+)                 │
-│   /ws/chat · /api/session · /api/session/{id} · /api/health     │
-└────────────────────────────┬────────────────────────────────────┘
-                             │
-       ┌─────────────────────▼──────────────────────┐
-       │           Conversation Manager              │
-       │  ┌──────────────┐  ┌──────────────────────┐│
-       │  │ Session Mgr  │  │   Intent Triage       ││
-       │  └──────────────┘  └──────────────────────┘│
-       │  ┌──────────────┐  ┌──────────────────────┐│
-       │  │Prompt Builder│  │  Context Trimmer      ││
-       │  └──────────────┘  └──────────────────────┘│
-       │  ┌──────────────────────────────────────────┤
-       │  │     Domain Policy Enforcer               ││
-       │  └──────────────────────────────────────────┤
-       └─────────────────────┬──────────────────────┘
-                             │
-       ┌─────────────────────▼──────────────────────┐
-       │              Data Layer                     │
-       │  products.json · orders.json · policy.md    │
-       │         data_lookup.py  (Python)            │
-       └─────────────────────┬──────────────────────┘
-                             │
-       ┌─────────────────────▼──────────────────────┐
-       │              LLM Engine                     │
-       │   Ollama → qwen2.5:1.5b-instruct-q4_K_M    │
-       │            (local, CPU-only)                │
-       └────────────────────────────────────────────┘
+```mermaid
+flowchart LR
+    Docs[63 Markdown documents] --> Chunk[Token-bounded chunker]
+    Chunk --> Embed[MiniLM CPU embeddings]
+    Embed --> Index[Persistent Chroma index]
+    UI[Browser] --> WS[FastAPI WebSocket]
+    WS --> Manager[Scope and session manager]
+    Manager --> Cache[Bounded retrieval and LRU cache]
+    Cache --> Index
+    Cache --> Budget[Evidence and memory prompt budget]
+    Budget --> Ollama[Local Qwen2.5 CPU generation]
+    Ollama --> UI
+    Manager --> History[Full transcript and summary state]
 ```
 
----
-
-## Model Selection & Justification
-
-**Selected model**: `qwen2.5:1.5b-instruct` at `Q4_K_M` quantization, served via **Ollama**.
-
-| Factor | Decision | Rationale |
-|--------|----------|-----------|
-| **Size** | 1.5B parameters | Fast on CPU (~8–15 tok/s); stays within 4 GB RAM |
-| **Family** | Qwen2.5-Instruct | Excellent instruction-following at small sizes; strong system-prompt adherence |
-| **Quantization** | Q4_K_M (4-bit) | Best quality/speed tradeoff for GGUF 4-bit; standard llama.cpp format |
-| **Serving** | Ollama | Zero-config local serving; async streaming API; cross-platform |
-| **Context** | 4096 tokens | Sufficient for multi-turn e-commerce conversations with injected facts |
-
-Alternatives considered:
-- **Phi-3.5-mini (3.8B Q4)**: Better quality but ~2.5× slower on CPU — too slow for conversational latency
-- **Gemma-2-2B**: Good quality but less reliable instruction following in our testing
-- **Qwen2.5-0.5B**: Too small — struggles with structured policy answers
-
----
-
-## Conversation Flow Design
-
-ShopBot uses six explicitly named conversation stages:
-
-### Stage 1 — Greeting & Intent Triage
-ShopBot greets the user and attempts to detect their intent from their first message using rule-based keyword matching. Detected intents:
-- `PRODUCT_QUERY` — questions about products, prices, availability, specs
-- `ORDER_TRACKING` — questions about order status, shipment, delivery
-- `RETURNS_POLICY` — questions about returns, refunds, exchanges, shipping costs
-- `OUT_OF_SCOPE` — anything else
-
-### Stage 2 — Information Gathering
-- **Order Tracking**: If no Order ID is detected, ShopBot asks for it explicitly.
-- **Product Query**: If the product name/category is vague, ShopBot asks for clarification.
-- **Returns/Policy**: Usually no additional info needed unless checking a specific order's return eligibility.
-
-### Stage 3 — Resolution
-The backend Python code:
-1. Looks up relevant data (order record / product matches / policy excerpt)
-2. Injects the facts as structured text into the prompt context
-3. Calls the LLM to generate a natural-language answer
-
-ShopBot answers only from the injected facts — it never invents order data or product specs.
-
-### Stage 4 — Topic-Switch Handling
-When the detected intent of a new user message differs from the previous turn:
-1. The Conversation Manager updates `active_intent` in session state
-2. A new data lookup is triggered for the new intent
-3. The prompt is rebuilt with fresh injected facts
-4. Previous turns remain in the history window (context is preserved, not reset)
-
-Example: User asks about their order, gets a status update, then asks "actually, what are the specs on those earbuds I bought?" — ShopBot smoothly switches to product lookup while still knowing the order context.
-
-### Stage 5 — Escalation & Out-of-Scope Handling
-**Out-of-scope queries** (general chit-chat, competitor questions, tasks unrelated to e-commerce):
-> *"I'm ShopBot, your order support assistant for this store. I'm set up to help with product questions, order tracking, or our return and shipping policy — which of those can I help you with?"*
-
-**In-scope but beyond authority** (e.g., "cancel my order"):
-> *"I can log a cancellation request for your order, but I can't guarantee it'll be processed before it ships — your order is currently in Processing. A member of our support team will follow up. Is there anything else I can help you with?"*
-
-### Stage 6 — Closing
-ShopBot recognizes closing signals ("thanks", "bye", "that's all") and responds naturally with a closing message. A **"New Session"** button in the UI calls `/api/session/{id}` DELETE, which completely clears session state — this is distinct from the conversational closing stage, which simply ends the topic without deleting session memory.
-
----
-
-## Context Memory Management
-
-**Strategy**: Sliding window with token-budget estimation.
-
-**How it works**:
-1. All conversation turns are stored in full in `session.history` (in-memory list).
-2. Before each LLM call, the Prompt Builder computes a rough token estimate: `len(text) / 4` (characters ÷ 4 ≈ tokens for English text).
-3. The system prompt + injected facts are always included (highest priority, never trimmed).
-4. Oldest turns are dropped first until the estimated token count fits within the configured `MAX_CONTEXT_TOKENS` budget (default: 1800 tokens for history, with the system prompt using ~400–600 tokens).
-5. At minimum, the last 2 turns are always kept (to avoid incoherent one-shot responses).
-
-**Why this approach**:
-- Simple and deterministic — no extra LLM call needed for summarization
-- Appropriate for Assignment 1 scope; summarization will be explored in Assignment 2
-- Prevents context overflow without silently corrupting conversation continuity
-
----
-
-## Example Dialogues
-
-### Dialogue 1 — Product Q&A with Topic Switch to Order Tracking
-
-**User**: Hi, what earbuds do you sell?
-
-**ShopBot**: Hi! Welcome to ShopBot 👋 I can help with product questions, order tracking, or our return policy. For earbuds, we carry the **ProSound Wireless Earbuds X1** at **$49.99**. They feature 30-hour total battery life, ANC, Bluetooth 5.3, and IPX5 water resistance. Available in Midnight Black, Pearl White, and Navy Blue. Would you like more details?
-
-**User**: How does it compare to the SoundBar Mini speaker?
-
-**ShopBot**: Great comparison question! Here's how they stack up:
-
-| Feature | ProSound Earbuds X1 | SoundBar Mini BT5 |
-|---------|--------------------|--------------------|
-| Price | $49.99 | $44.99 |
-| Battery | 30 hours | 20 hours |
-| Water resistance | IPX5 | IPX7 |
-| ANC | Yes | No |
-| Use case | Personal listening | Shared/outdoor audio |
-
-If you want something for private listening with noise cancellation, the earbuds are the better pick. The SoundBar shines for outdoor or group settings.
-
-**User**: Nice. Actually, can you check my order? It's ORD-10001.
-
-**ShopBot**: Sure! Switching over to order tracking. Here's the status for **ORD-10001**:
-
-- **Customer**: Alice Johnson
-- **Status**: ✅ Delivered
-- **Delivered**: September 4, 2026 (1 day early!)
-- **Carrier**: FedEx · Tracking: TRK-88421-US
-- **Items**: ProSound Wireless Earbuds X1 (Midnight Black) + CablePro Cable ×2
-
-Is there anything else I can help you with?
-
----
-
-### Dialogue 2 — Order Tracking with Off-Topic Redirect
-
-**User**: What's the status of order ORD-10005?
-
-**ShopBot**: Checking that now! Here's the status for **ORD-10005**:
-
-- **Customer**: Eva Nguyen
-- **Status**: 🚚 Out for Delivery
-- **Carrier**: FedEx · Tracking: TRK-55873-US
-- **Estimated delivery**: September 12, 2026 (today!)
-- **Items**: ZenFlow Yoga Mat Pro (Teal) + NightOwl LED Desk Lamp
-
-Your package is on the truck — keep an eye out today!
-
-**User**: That's great. Also, can you write me a poem about delivery drivers?
-
-**ShopBot**: Ha, I appreciate the creativity! But I'm ShopBot — I'm specifically set up for e-commerce support: product questions, order tracking, and return/shipping policy. Poetry's a bit outside my expertise 😄 Is there anything else about your order or our products I can help with?
-
-**User**: Fair enough. What's your return policy if the yoga mat is damaged?
-
-**ShopBot**: Good question! If your yoga mat arrives damaged:
-
-- Contact us within **7 days** of delivery with a photo of the damage.
-- We'll arrange a **free return** — you won't pay return shipping.
-- You choose: **full refund** or **replacement**.
-
-Since your order is out for delivery today, inspect it when it arrives. If there's any damage, come back with your Order ID (ORD-10005) and we'll get it sorted right away.
-
----
-
-### Dialogue 3 — Returns & Policy with Multi-Turn Context
-
-**User**: I want to return my jacket. Order ORD-10007.
-
-**ShopBot**: I can help with that! Here's what I see for **ORD-10007**:
-
-- **Item**: TrailBlazer Waterproof Jacket (L / Olive Green) — $84.99
-- **Status**: 🔄 Return Requested
-- **Return reason logged**: Size too large — wants size M
-- **Current return status**: Return label has been emailed, awaiting item drop-off.
-
-It looks like a return is already in progress! Check your email at the address on file for the pre-paid return label. If you haven't received it or need it resent, let me know.
-
-**User**: I actually want an exchange, not a refund — I want size M instead.
-
-**ShopBot**: Noted! Exchanges for a different size of the same item are absolutely supported within 30 days of delivery, and your return is well within that window. To change your return to an exchange for **size M / Olive Green**:
-
-1. When you drop off the return, mention "exchange" on the return form (or leave a note inside the package).
-2. Once we receive and inspect the jacket, we'll ship the size M if it's in stock — and it currently **is** (25 units available).
-
-I'll flag your preference as an exchange request. Is there anything else I can help with?
-
-**User**: How long until I get the refund if they're out of M?
-
-**ShopBot**: If size M is out of stock when we receive your return, we'll automatically issue a **full refund** instead. Timeline:
-
-- Item received + inspected: 1–3 business days after drop-off
-- Refund processed: **3–5 business days** after inspection
-- Appears on your statement: additional **2–5 business days** depending on your bank
-
-So roughly **1–2 weeks** from drop-off in the worst case. The refund goes back to your original payment method.
-
----
-
-## Setup Instructions
-
-### Prerequisites
-- Python 3.11+
-- [Ollama](https://ollama.com/) installed and running
-- Git
-
-### 1. Clone the repository
-```bash
-git clone https://github.com/SheharyarAli-Dev/E-Commerce-Order-Support-Assistant-Local-Conversational-AI-System.git
-cd E-Commerce-Order-Support-Assistant-Local-Conversational-AI-System
+There are no runtime agents, external search tools, or direct JSON business-answer lookups. Fixture helpers remain for validation and intent vocabulary. Every valid chat query attempts top-3 retrieval or a cached equivalent, including social and unrelated messages; those messages ignore retrieved facts. Missing assets return safe fallbacks.
+
+## Requirements and setup
+
+Tested on Windows with Python 3.13, CPU PyTorch 2.6.0, sentence-transformers 3.4.1, transformers 4.48.3 and Chroma 1.0.20. Use Python 3.11–3.13; Python 3.14 is not the validated dependency environment.
+
+Run from the repository root in PowerShell:
+
+```powershell
+py -3.13 -m venv .venv
+.venv/Scripts/Activate.ps1
+python -m pip install -r requirements-lock.txt
+python scripts/prepare_models.py
+ollama pull qwen2.5:0.5b
+python scripts/validate_corpus.py
+python scripts/seed_data_check.py
+python scripts/index_documents.py
+ollama serve
+uvicorn backend.main:app --host 127.0.0.1 --port 8000 --env-file .env
 ```
 
-### 2. Pull the LLM model
-```bash
-ollama pull qwen2.5:1.5b
-```
-> This downloads ~1 GB. Ensure Ollama is running (`ollama serve`).
+If Ollama already runs, skip `ollama serve`. Copy `.env.example` to `.env` only when needed; existing environment variables also work. Open http://localhost:8000. No frontend package manager or build is required.
 
-### 3. Set up Python environment
-```bash
-python -m venv venv
-# Windows:
-venv\Scripts\activate
-# macOS/Linux:
-source venv/bin/activate
+Model preparation requires internet once. It records exact Hugging Face commit revisions in `models/manifest.json`. Runtime embedding/tokenizer loading uses `local_files_only=True`; Chroma receives explicit embeddings and disables anonymized telemetry. Ollama uses local weights, `num_gpu=0`, `num_ctx=4096`, and at most 512 output tokens. After preparation, run offline with:
 
-pip install -r requirements.txt
+```powershell
+$env:HF_HUB_OFFLINE='1'
+$env:TRANSFORMERS_OFFLINE='1'
+python scripts/index_documents.py
+uvicorn backend.main:app --host 127.0.0.1 --port 8000
 ```
 
-### 4. Run the backend
-```bash
-uvicorn backend.main:app --host 0.0.0.0 --port 8000 --reload
+The UI can fall back to its system font when the optional Google font is unavailable; chat code and styles are served locally.
+
+## Corpus and incremental indexing
+
+`data/corpus/` contains **63 source documents**: 18 product specifications, 18 distinct product FAQs, 15 fictional order summaries, nine policy topics, and three catalog price summaries. They derive from `data/products.json`, `data/orders.json`, and `data/policy.md`; the manifest records provenance, document ID, type and applicable SKU/order ID. These are snapshots, not live inventory or fulfillment data. Policy documents clarify that ShopBot cannot actually change orders, initiate refunds, send labels, or contact carriers.
+
+The corpus produces **155 chunks**. MiniLM `all-MiniLM-L6-v2` supplies normalized 384-dimensional CPU embeddings; it is small enough for local execution. Its 256-wordpiece input limit motivates a 220-token chunk budget including title/entity prefixes, with 32-token overlap within oversized sections. Section boundaries are preserved where possible. Chunks preserve original text, prices, capitalization and line breaks using tokenizer character offsets; MiniLM decoding is never used to reconstruct evidence. Changing to this chunker requires `--rebuild`. Chunk IDs include document ID, ordinal and content hash.
+
+Chroma provides local disk persistence, cosine search, metadata filters and incremental upserts. Indexing tracks document hashes, embedding revision, dimensions and chunker settings. Unchanged documents are not embedded again. Changed documents are embedded before mutation; obsolete chunks and deleted documents are removed. A persistent incomplete-build marker prevents serving an interrupted revision. Rebuild explicitly after an interrupted update or model/chunker change:
+
+```powershell
+# Stop the backend before updating the index.
+python scripts/index_documents.py
+python scripts/index_documents.py --rebuild
 ```
 
-### 5. Open the frontend
-Open `frontend/index.html` in your browser, or navigate to `http://localhost:8000` if the backend serves static files.
+A process ownership lock prevents the server, benchmark and index writer from opening the same index simultaneously. An unchanged second run reports `unchanged=63`, with no duplicate inserts.
 
----
+## Retrieval, context and memory
 
-## API Documentation
+Queries request **top-k=3**, then discard similarity below **0.40**. The threshold was calibrated on the separate 30-question development set: the weakest positive scored 0.420 and strongest negative 0.346. Filtering or prompt limits can leave fewer than three usable chunks. Order queries use exact canonical order-ID metadata filters; other queries exclude order records. Recognized entity follow-ups use session metadata. Generated answers are never shared across sessions.
 
-### WebSocket: `ws://localhost:8000/ws/chat`
+Blocking embeddings/search run in a dedicated two-worker executor, with at most eight admitted jobs and a 1.5-second deadline including queue time. Timed-out work retains its admission slot until the worker actually finishes. A fixed daemon-worker pool bounds shutdown to 200 ms; permanently stuck native work requires restarting the server process and cannot grow an unbounded queue. Retrieval results use a 128-entry LRU cache with a 300-second TTL; keys include query, entity/type filters, model/index revisions, top-k and threshold. Transient errors are not cached. Same-session turns are serialized; separate sessions remain independent.
 
-**Client → Server** (JSON):
-```json
-{ "session_id": "uuid-v4-string", "message": "user message text" }
+The local Qwen tokenizer counts the complete chat-template prompt. A 4096-token context reserves 512 output tokens and 256 safety tokens, leaving 3328 prompt tokens. Instructions and current input take priority; evidence is capped at 1400 tokens, summary at 256, and recent complete exchanges at 800, with a final total check. Oversized mandatory input asks the user to shorten the question. Evidence is explicitly untrusted data: embedded commands do not acquire instruction authority; conflicting facts should be acknowledged. Conflicting structured price/stock/status/total fields for the same entity produce a deterministic clarification before generation; conflicts in free-form policy prose still depend on the model.
+
+The full transcript remains intact in ignored `data/chat_history.json`. The prompt uses a separate working view. A summary cursor records older messages already summarized; summaries have a three-second timeout and trimming fallback. Summary, cursor, intent and last entities persist alongside messages. Legacy message-only histories still load. Reset clears all working memory and transcript for the session.
+
+## Streaming API and failures
+
+`/ws/chat` still accepts `{session_id, message}` and returns ordinary `token` frames followed by `done`, or a terminal `error`. `/api/health` retains existing keys and adds `rag.ready`. History/session REST routes retain their shapes.
+
+Examples:
+
+| Input / condition | Behavior |
+| --- | --- |
+| `hi` or `my name is Qadeer Raza` | Natural local-model greeting |
+| `What is the capital of Pakistan?` | Store-domain redirect, no geography answer |
+| `Track ORD-99999` | No matching order; no other order evidence |
+| Weak or irrelevant evidence | Stream an explicit no-match notice, then a guarded conversational preference question |
+| Missing model/index, embedding/search failure | Safe temporary-unavailability reply |
+| Deadline or admission limit | Bounded fallback; other requests remain responsive |
+| Excessive prompt size | Shorten-question clarification |
+
+**Single Assignment 2 bonus: visible sources.** Grounded replies append a server-controlled `Sources:` footer through the same token frames. Only evidence actually included in the prompt is listed; paths are relative and deduplicated. Greetings, redirects and no-match replies have no footer.
+
+## Tests and measurements
+
+```powershell
+python -m pytest
+# Run retrieval benchmarks while the backend is stopped (index ownership).
+python scripts/benchmark_rag.py --iterations 100 --concurrency 1 --output docs/benchmarks/rag-results-c1.json
+python scripts/benchmark_rag.py --iterations 100 --concurrency 5 --output docs/benchmarks/rag-results-c5.json
+# With the backend running, measure generation separately:
+python scripts/benchmark_rag.py --generation-only --websocket ws://127.0.0.1:8000/ws/chat --concurrency 5 --output docs/benchmarks/generation-c5.json
 ```
 
-**Server → Client** (streaming JSON frames):
-```json
-{ "type": "token",  "content": "partial text token" }
-{ "type": "done",   "content": "" }
-{ "type": "error",  "content": "error description" }
-```
+Tests cover corpus limits, incremental shortening/deletion and embedding failures, exact order filters, cache revisions, timeout admission, full prompt limits, summary/reset/history compatibility, domain guards and streamed terminal frames. Unit tests replace external inference with deterministic doubles; measurements below use real MiniLM embeddings and the real disk index.
 
-### REST Endpoints
+Measured October 10, 2026 on this Windows CPU machine. Full hardware/version/model-revision records and raw durations are in `docs/benchmarks/`.
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| `GET` | `/api/health` | Liveness check |
-| `POST` | `/api/session` | Create new session → `{ "session_id": "..." }` |
-| `DELETE` | `/api/session/{session_id}` | Reset/clear session |
+| Measurement | One concurrent user | Five concurrent users |
+| --- | ---: | ---: |
+| Warm uncached retrieval p50 | 10.10 ms | 29.03 ms |
+| Warm uncached retrieval p95 | 16.09 ms | 41.87 ms |
+| Cached retrieval p95 | 0.0062 ms | 0.0048 ms |
+| Model/index cold load | 3825 ms | 3788 ms |
+| Holdout source/no-match checks | 30/30 | 30/30 |
 
----
+Each run contains 100 uncached measurements plus 100 separately reported repeated-cache measurements. The unseen holdout contains 20 answerable and ten unanswerable queries. Source correctness accepts the expected specification or matching FAQ; it does not establish universal answer accuracy. Retrieval meets the sub-second target on this small corpus. The table above records the original 1.5B configuration. Generation/first-token timing is measured separately through real WebSocket traffic and can be much slower than retrieval; see `generation-c*.json`. The measured single-session first token was 7.57 seconds, with 10.46 seconds total. Five sessions completed in 7.45?14.61 seconds each; health requests during generation returned HTTP 200 in 57?375 ms. These timings include CPU generation queueing and are not retrieval latency.
 
-## Latency Benchmarks
+## October 11 fixes and verification
 
-> Measured on: [to be filled after local benchmark run]
+The default model is now **qwen2.5:0.5b** for faster CPU replies. Set `SHOPBOT_MODEL=qwen2.5:1.5b` for more model capacity at higher latency. Startup warms the model and common system prompt in the background; `SHOPBOT_KEEP_ALIVE=30m` keeps weights resident between requests. Ordinary answers are capped at 256 generated tokens; catalog lists can use 512, both subject to `SHOPBOT_MAX_TOKENS`. Full prompt budgeting continues to reserve the configured maximum.
 
-| Metric | Value |
-|--------|-------|
-| Model | qwen2.5:1.5b-instruct Q4_K_M |
-| Hardware | CPU-only (laptop) |
-| Time to first token | ~X.X seconds |
-| Generation speed | ~X–X tokens/second |
-| Avg total response time | ~X seconds (short answer) |
+Shopping requests such as `i need cheap product`, `list if prodcut`, and `what can I buy under $20?` stay in scope. Common product typos are normalized for routing, retrieval, and generation. Broad shopping queries retrieve the three indexed catalog summaries with top-k=3. Price limits and category terms filter **retrieved rows**, sorted by price, before prompt assembly; runtime answers never read fixture JSON. Catalog replies stream exact rows from the retrieved evidence retained in the budgeted prompt, without model-generated facts. Ordinary browsing supplies five matching options; explicit `all` requests supply up to 18, and `cheapest` supplies one. Other support replies use local model generation. No-match turns stream a safe notice immediately and use the model only for a guarded preference question, preventing unsupported inventory claims. Exact unknown-order and temporarily unavailable retrieval replies remain deterministic.
 
----
+Fresh Python 3.13 verification: **149 tests passed**, fixture validation passed, and all 63 corpus documents validated. An unchanged indexing run reported `unchanged=63` before the chunker rebuild. The rebuilt index has 155 chunks. Windows history reads and writes now share a reentrant lock, atomic replacement retries brief file locks, and `done` is sent after persistence. Live HTTP/static serving and history read/reset/deletion checks passed.
 
-## Known Limitations
+Measured on an Intel Core i5-1245U CPU, with the final model already loaded:
 
-1. **No persistent storage** — session state is in-memory; server restart clears all sessions.
-2. **Approximate token counting** — context trimming uses character/4 estimate, not a true tokenizer; may occasionally be slightly over/under budget.
-3. **Rule-based intent detection** — keyword matching may misclassify ambiguous queries; no ML-based NLU.
-4. **No order modification** — ShopBot can log requests but cannot actually cancel, modify, or refund orders (by design for this assignment).
-5. **English only** — no multilingual support.
-6. **Single-process, in-memory sessions** — not suitable for multi-server deployment (no Redis/DB backend).
-7. **CPU latency** — 8–15 tok/s means responses take a few seconds; not suitable for real-time low-latency production.
+| Check | First token | Total reply |
+| --- | ---: | ---: |
+| Product battery question | 2.97 s | 3.58 s |
+| Cheap product request | 35 ms | 46 ms |
+| Product list with typo | 38 ms | 46 ms |
+| Products under $20 | 34 ms | 40 ms |
+| No matching telescope documents | 27 ms | 904 ms |
 
----
+Five concurrent real WebSocket chats all ended with `done`, taking 3.39?6.36 seconds each. Updated five-user uncached retrieval p95 was **55.08 ms**, cached p95 **0.0062 ms**, with **30/30** holdout source/no-match checks. Earlier cold 1.5B inference took 11.45 seconds for the battery question; the direct installed-model comparison took 7.01 seconds for 1.5B versus 4.12 seconds for 0.5B. These are individual runs, not a guarantee or a controlled cold-to-cold comparison. Prompt/model caching, CPU load, history length and generation queueing affect latency.
 
-## Bonus — UX/Persona Polish
+Raw evidence: `docs/benchmarks/model-comparison.json`, `shopping-speed-after.json`, `rag-results-2026-10-11-c5.json`, `generation-2026-10-11-c5.json`, and `api-checks-2026-10-11.json`. Reproduce shopping checks with `python scripts/check_shopping_chat.py` while the backend is running; run `python scripts/compare_local_models.py` with the backend stopped.
 
-*Attempted after all six core phases were complete.*
+## Limitations and submission
 
-ShopBot includes bonus UX polish:
-- **Avatar & persona** — ShopBot has a distinctive robot avatar and consistent in-character personality
-- **Typing indicator** — animated "..." dots while the model is generating
-- **Intent badge** — small label shows the detected intent category (📦 Order / 🛍️ Product / 🔄 Policy)
-- **Dark mode** — clean, modern dark UI with branded accent colors
-- **Adversarial robustness** — tested against 10+ adversarial prompts; all redirected in-character
+This is a fictional, unauthenticated classroom demo. Anyone who knows a fixture order ID can ask about it; deployable order access requires authentication. Small-model grounding and prompt-injection resistance remain probabilistic. Semantic search can miss paraphrases or choose incomplete evidence; the small labeled sets do not prove general accuracy. Runtime is single-process; JSON history and index ownership are unsuitable for multiple server workers. CPU generation can queue under concurrent load. Summaries can lose details, while the full transcript remains available. No fulfillment actions are performed.
 
----
+Browser automation was unavailable in this execution environment. HTTP/static serving and real WebSocket behavior were checked; rendered desktop/mobile source-footer verification remains a manual check.
 
-## Team & Attribution
+Submit this source directory through a private repository or ZIP. Include corpus, manifest, preparation/indexing scripts, evaluation sets, tests and documentation. Exclude `.env`, `.venv`, model weights, generated vector store, logs and conversation history. Rebuild generated assets using the commands above. AI prompt provenance is recorded in `docs/ai-prompts.md` for viva discussion.
 
-| Name | Student ID | Role |
-|------|-----------|------|
-| **Sheharyar Ali** | i230097 | Backend, Conversation Manager, Prompt Engineering |
-| **Qadeer Raza** | i233059 | Frontend, LLM Integration, Testing & Documentation |
+## Team and attribution
 
-**Course**: Natural Language Processing  
-**Assignment**: 1 of 3  
-**Submission Date**: September 2026
+| Name | Student ID | Original project role |
+| --- | --- | --- |
+| Sheharyar Ali | i230097 | Backend, conversation manager, prompt engineering |
+| Qadeer Raza | i233059 | Frontend, LLM integration, testing and documentation |
 
----
-
-*ShopBot is a mock system built for academic purposes. All orders, products, and customer data are fictional.*
+Course: Natural Language Processing. Assignment 2 extends the Assignment 1 codebase. The supplied assignment states October 8, 2026 at 11:59 pm; no revised deadline is documented. All product/order/customer records are fictional.
