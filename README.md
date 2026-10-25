@@ -1,162 +1,351 @@
-# ShopBot — Assignment 2: Offline Retrieval-Augmented Support
+# ShopBot — Local Conversational AI with Offline Voice & Domain Tools
 
-ShopBot answers product, fictional order, return, refund, exchange and shipping questions using local documents. It streams responses through FastAPI and Ollama to the existing light chat UI. Greetings are conversational; unrelated requests such as “What is the capital of Pakistan?” are redirected without answering.
+ShopBot is an offline, privacy-first conversational AI support system for an e-commerce electronics and apparel store. It answers product specifications, order tracking queries, returns/shipping policies, performs live catalog lookups, solves safe arithmetic calculations, books support callback appointments, and maintains cross-session customer profiles.
 
-## Architecture
+Inference is **100% local and CPU-only**, powered by **Ollama (`qwen2.5:0.5b`)**, **Vosk ASR**, **Piper TTS (ONNX Lessac)**, **MiniLM embeddings**, **Chroma vector database**, and **SQLite domain storage**.
+
+---
+
+## Evolution Across Assignments
+
+```
+┌─────────────────────────────────┐
+│ Assignment 1: Conversational AI │ ──▶ Ollama Qwen2.5, Intent Triage, Multi-turn History, Token Trimming
+└─────────────────────────────────┘
+                 │
+                 ▼
+┌─────────────────────────────────┐
+│ Assignment 2: Offline RAG       │ ──▶ MiniLM Embeddings, 63 Docs / 155 Chunks, Chroma Vector Store, Sources
+└─────────────────────────────────┘
+                 │
+                 ▼
+┌─────────────────────────────────┐
+│ Assignment 3: Voice + Tools     │ ──▶ Vosk Streaming ASR, Piper TTS, Calculator, SQLite Shop DB, Calendar, CRM
+└─────────────────────────────────┘
+```
+
+- **Assignment 1**: Built the foundational conversation manager, rule-based intent triage, Ollama streaming engine, and multi-turn chat history with token budget pruning.
+- **Assignment 2**: Integrated local semantic search with MiniLM-L6-v2 embeddings and Chroma vector storage over 63 store documents; added exact order metadata filtering and grounded `Sources:` citations.
+- **Assignment 3**: Added real-time speech-to-text (Vosk 16 kHz PCM), streaming text-to-speech (Piper ONNX), and four domain tools (AST Calculator, Live SQLite Catalog, Support Calendar, and CRM Customer Profile) under strict timeouts and error fallbacks.
+
+---
+
+## System Architecture
 
 ```mermaid
-flowchart LR
-    Docs[63 Markdown documents] --> Chunk[Token-bounded chunker]
-    Chunk --> Embed[MiniLM CPU embeddings]
-    Embed --> Index[Persistent Chroma index]
-    UI[Browser] --> WS[FastAPI WebSocket]
-    WS --> Manager[Scope and session manager]
-    Manager --> Cache[Bounded retrieval and LRU cache]
-    Cache --> Index
-    Cache --> Budget[Evidence and memory prompt budget]
-    Budget --> Ollama[Local Qwen2.5 CPU generation]
-    Ollama --> UI
-    Manager --> History[Full transcript and summary state]
+flowchart TD
+    subgraph Client["Browser Interface (Plain HTML5 / CSS3 / Vanilla JS)"]
+        UI["Web UI Chat Window"]
+        Mic["Microphone (AudioContext 16 kHz PCM)"]
+        Spk["Audio Playback Queue (22.05 kHz PCM)"]
+    end
+
+    subgraph FastAPIServer["FastAPI Application Server"]
+        WSVoice["/ws/voice (Streaming Audio & Control)"]
+        WSChat["/ws/chat (Streaming Text Chat)"]
+        APIRoutes["REST API (/api/health, /api/sessions, /api/crm)"]
+
+        subgraph VoiceSubsystem["Voice Pipeline"]
+            Vosk["Vosk ASR Engine\n(16 kHz Mono, RMS Silence Endpointing)"]
+            Norm["Inverse Text Normalizer\n(Dates, Currencies, Percentages)"]
+            Segmenter["Sentence Segmenter\n(Streaming Boundary Detector)"]
+            Piper["Piper TTS Engine\n(ONNX Lessac Medium, 22.05 kHz)"]
+        end
+
+        subgraph Manager["Conversation Manager"]
+            Triage["Intent Triage & Domain Guard"]
+            SessionMgr["Session Store & History Summarizer"]
+            Budgeter["Prompt Budgeter & Context Window"]
+        end
+
+        subgraph ToolSubsystem["Tool Orchestrator"]
+            ToolGate["Regex Candidate Pre-Filter (<0.2 ms)"]
+            ToolDecision["LLM JSON Decision & Pydantic Validation"]
+            ToolCalc["Calculator (AST Decimal Arithmetic)"]
+            ToolCatalog["Catalog Query (SQLite data/shop.db)"]
+            ToolCalendar["Support Calendar (Local data/calendar.json)"]
+            ToolCRM["CRM Profile (SQLite data/crm.db)"]
+        end
+
+        subgraph RAGSubsystem["RAG Vector Retrieval"]
+            MiniLM["MiniLM-L6-v2 Embeddings (CPU INT8/FP32)"]
+            Chroma["Chroma Vector Store (63 Docs / 155 Chunks)"]
+            LRUCache["Retrieval Cache (LRU 128 entries)"]
+        end
+    end
+
+    subgraph LocalInference["Local Model Execution (CPU)"]
+        Ollama["Ollama Daemon\n(qwen2.5:0.5b / qwen2.5:1.5b)"]
+    end
+
+    %% Audio In
+    Mic -->|Binary PCM16 Frames| WSVoice
+    WSVoice --> Vosk
+    Vosk -->|Raw Text| Norm
+    Norm -->|Finalized Utterance| Manager
+
+    %% Text In
+    UI -->|JSON Message| WSChat
+    WSChat --> Manager
+
+    %% Manager Pipeline
+    Manager --> Triage
+    Triage --> ToolGate
+    ToolGate --> ToolDecision
+    ToolDecision -->|Safe Tool Call| ToolCalc & ToolCatalog & ToolCalendar & ToolCRM
+    ToolCalc & ToolCatalog & ToolCalendar & ToolCRM -->|ToolResult JSON| Budgeter
+
+    Triage -->|Product / Policy / Order| RAGSubsystem
+    RAGSubsystem -->|Evidence Chunks| Budgeter
+
+    Budgeter -->|Assembled Prompt| Ollama
+    Ollama -->|Token Stream| Manager
+
+    %% Text Out
+    Manager -->|Token Stream| WSChat
+    WSChat -->|token frames| UI
+
+    %% Voice Out
+    Manager -->|Token Stream| Segmenter
+    Segmenter -->|Complete Sentence| Piper
+    Piper -->|Base64 PCM16 Chunks| WSVoice
+    WSVoice -->|audio frames| Spk
 ```
 
-There are no runtime agents, external search tools, or direct JSON business-answer lookups. Fixture helpers remain for validation and intent vocabulary. Every valid chat query attempts top-3 retrieval or a cached equivalent, including social and unrelated messages; those messages ignore retrieved facts. Missing assets return safe fallbacks.
+---
 
-## Requirements and setup
+## Voice Pipeline Specifications
 
-Tested on Windows with Python 3.13, CPU PyTorch 2.6.0, sentence-transformers 3.4.1, transformers 4.48.3 and Chroma 1.0.20. Use Python 3.11–3.13; Python 3.14 is not the validated dependency environment.
+The voice subsystem operates entirely offline and provides a bidirectional voice conversation experience over `/ws/voice`:
 
-Run from the repository root in PowerShell:
+### 1. Speech-to-Text (Vosk ASR)
+- **Model**: `vosk-model-small-en-us-0.15` (compact 40 MB Kaldi-based offline speech recognizer).
+- **Audio Stream**: Raw PCM16 mono at 16,000 Hz, sent in 20–40 ms chunks (640–1280 bytes) over WebSocket.
+- **Endpointing**: Energetic RMS trailing silence detection (`SILENCE_RMS = 400`, default `600 ms` silence) combined with Vosk's `AcceptWaveform` to detect end-of-speech with low latency.
+- **Inverse Text Normalization**: Raw phoneme transcripts are normalized into conventional text representation:
+  - Spoken currencies: `"forty nine dollars"` $\to$ `"$49"`, `"twenty dollars and fifty cents"` $\to$ `"$20.50"`.
+  - Percentages: `"fifteen percent"` $\to$ `"15%"`.
+  - Times & Dates: `"two p m"` $\to$ `"2 pm"`, `"two thirty"` $\to$ `"2:30"`.
+  - Punctuation & capitalization: automatically adds sentence capitalization and trailing question marks.
+
+### 2. Text-to-Speech (Piper TTS)
+- **Model**: `en_US-lessac-medium.onnx` with ONNX Runtime CPU inference.
+- **Sample Rate**: 22,050 Hz 16-bit mono PCM.
+- **Sentence-by-Sentence Streaming**: The `SentenceSegmenter` identifies sentence boundaries (`.`, `?`, `!`, newline) as tokens stream from the LLM. Synthesizing begins immediately on the first sentence, so the user hears speech while the rest of the text is still generating.
+- **Thread Safety**: Piper's C++ espeak phonemizer is guarded by an internal lock (`_phonemize_lock`); ONNX inference threads are capped at 2 (`SHOPBOT_TTS_THREADS=2`) to prevent CPU thread starvation against Ollama.
+
+### 3. Voice WebSocket Protocol (`/ws/voice`)
+
+| Direction | Frame Type | Content / Payload | Purpose |
+| --- | --- | --- | --- |
+| **Client $\to$ Server** | `start` | `{"type":"start", "session_id":"...", "tts":true}` | Initializes voice session and stream |
+| **Client $\to$ Server** | Binary | Raw PCM16 mono 16 kHz byte array buffer | Continuous microphone stream |
+| **Client $\to$ Server** | `end_of_speech` | `{"type":"end_of_speech"}` | Forces speech recognition finalization |
+| **Client $\to$ Server** | `stop_audio` | `{"type":"stop_audio"}` | Immediately interrupts ongoing TTS playback |
+| **Server $\to$ Client** | `ready` | `{"type":"ready", "asr":true, "tts":true, "sample_rate":22050}` | Server stream initialized |
+| **Server $\to$ Client** | `partial_transcript` | `{"type":"partial_transcript", "text":"..."}` | Real-time speech preview |
+| **Server $\to$ Client** | `final_transcript` | `{"type":"final_transcript", "text":"...", "asr_ms":...}` | Final normalized user utterance |
+| **Server $\to$ Client** | `tool_call` | `{"type":"tool_call", "name":"...", "arguments":{...}}` | Visual indicator of tool execution |
+| **Server $\to$ Client** | `tool_result` | `{"type":"tool_result", "name":"...", "ok":true, "elapsed_ms":...}` | Tool execution outcome |
+| **Server $\to$ Client** | `token` | `{"type":"token", "content":"..."}` | Assistant text token |
+| **Server $\to$ Client** | `audio` | `{"type":"audio", "seq":0, "data":"<base64 PCM16>", "sample_rate":22050}` | Streamed audio chunk |
+| **Server $\to$ Client** | `audio_end` | `{"type":"audio_end"}` | Signals completion of spoken response |
+| **Server $\to$ Client** | `metrics` | `{"type":"metrics", "asr_finalize_ms":..., "tool_ms":..., ...}` | Turn latency breakdown |
+| **Server $\to$ Client** | `done` | `{"type":"done", "content":""}` | Complete turn finished |
+
+---
+
+## Domain Tools Specification
+
+ShopBot includes four domain tools callable by the LLM via prompt-based JSON function calling. Tool execution is guarded by candidate regex pre-filtering, 5-second decision timeouts, Pydantic argument validation, and structured error fallbacks.
+
+```
+Incoming Turn ──▶ Candidate Gate (<0.2 ms) ──▶ LLM JSON Decision (JSON Mode) ──▶ Pydantic Validate ──▶ Safe Execution
+                                                                                       │
+                                                                                       ▼ (if failed or timed out)
+                                                                                  Deterministic Fallback
+```
+
+### Tool Summary Table
+
+| Tool Name | Purpose | Data Source | Latency (p50) | Safety & Guardrails |
+| --- | --- | --- | ---: | --- |
+| `calculator` | Exact arithmetic, discounts, totals | Pure Python AST | **1.1 ms** | Safe AST visitor, `decimal.Decimal`, no `eval()`, recursion limit, division-by-zero protection. |
+| `catalog_query` | Live product stock, price, specs | SQLite `data/shop.db` | **2.0 ms** | Parameterized SQL only, no raw text queries, variant label breakdown. Rebuildable via `set_stock.py`. |
+| `support_calendar` | Schedule/list/cancel support calls | JSON `data/calendar.json` | **2.5 ms** | Thread-locked file I/O, customer owner isolation, relative date parsing (`tomorrow 2pm`), 90-day window. |
+| `crm_profile` | Cross-session memory & preferences | SQLite `data/crm.db` | **52.9 ms** | Customer validation, sensitive data filters (rejects passwords/credit cards), deterministic greeting on return. |
+
+### 1. `calculator`
+- **Arguments**: `{"expression": "49.99 * 0.85"}`
+- **Capabilities**: Addition, subtraction, multiplication, division, modulo, exponents, parentheses, percentages.
+- **Example**: *"What is 15% off $49.99?"* $\to$ Calculates `49.99 * (1 - 0.15) = 42.4915` $\to$ `"$42.49"`.
+
+### 2. `catalog_query`
+- **Arguments**: `{"sku": "ELEC-001"}` or `{"category": "Electronics", "max_price": 50.0, "in_stock_only": true}`
+- **Capabilities**: Reads live inventory and variant breakdown (`Midnight Black: 60`, `Pearl White: 40`).
+- **Live Stock Modification**: Use `python scripts/set_stock.py --sku ELEC-001 --stock 0` to demonstrate live changes during viva!
+
+### 3. `support_calendar`
+- **Arguments**: `{"action": "schedule", "title": "Support callback", "date": "2026-10-26", "time": "14:00"}`
+- **Capabilities**: Relative date parsing (`tomorrow at 2pm`, `next Monday at 10am`), listing active bookings, cancelling appointments.
+
+### 4. `crm_profile` (Bonus Feature)
+- **Arguments**: `{"action": "update", "name": "Sheharyar", "preference_key": "preferred_carrier", "preference_value": "FedEx"}`
+- **Capabilities**: Cross-session memory in `data/crm.db`. On returning sessions, identifies the customer and outputs a deterministic welcome greeting:
+  `"Welcome back, Sheharyar! Last time you asked about product ELEC-001."`
+
+---
+
+## Hardware and Performance Benchmarks
+
+All measurements were conducted locally on an **Intel Core i7-8565U CPU @ 1.80GHz** running Windows 11 with **Python 3.12.10** and local **Ollama (`qwen2.5:0.5b`)**. Raw evidence is persisted in `docs/benchmarks/voice-results.json`.
+
+### Benchmark Results Table
+
+| Pipeline Stage / Metric | Single User ($C=1$) | Two Concurrent Users ($C=2$) | Performance Notes |
+| --- | ---: | ---: | --- |
+| **Vosk ASR Stream Finalize** | **36.2 ms** | — | Evaluated over 16 kHz audio; RMS endpoint silence at 600 ms. |
+| **Piper TTS Real-Time Factor (RTF)** | **0.180** | — | **5.5× faster than real-time** on CPU (1s audio synthesizes in 180 ms). |
+| **Piper TTS First Sentence Synthesis** | **950.3 ms** | — | Sentence streamed to audio player before remainder of reply generates. |
+| **Tool Orchestrator Gate** | **0.1 ms** | **0.1 ms** | Microsecond regex pre-filter eliminates unnecessary LLM calls. |
+| **Tool Orchestrator LLM Decision** | **1,375.5 ms** | **1,410.2 ms** | Few-shot JSON decision prompt with schema validation. |
+| **Tool Safe Execution (Calculator)** | **1.1 ms** | **1.2 ms** | In-memory AST Decimal arithmetic. |
+| **Tool Safe Execution (Catalog Query)** | **2.0 ms** | **2.1 ms** | Parameterized SQLite query over `data/shop.db`. |
+| **Tool Safe Execution (Support Calendar)** | **2.5 ms** | **2.6 ms** | File-backed JSON appointment write with thread lock. |
+| **Tool Safe Execution (CRM Store)** | **52.9 ms** | **53.8 ms** | SQLite customer record upsert and privacy scan. |
+| **LLM Time-to-First-Token (TTFT)** | **4,694.1 ms** | **4,514.9 ms** | Streaming token begins yielding over WebSocket. |
+| **End-of-Speech to First Spoken Audio** | **7,888.5 ms** | **13,926.0 ms** | Catalog tool query achieved first audio in **3,896.6 ms**. |
+| **Total Turn Duration** | **6,509.2 ms** | **10,143.2 ms** | Full text generation, tool execution, and audio synthesis. |
+
+### Concurrency Observations
+- With **2 concurrent users**, CPU load is shared across Ollama's threads without socket drops or crashes.
+- Vosk ASR and Piper TTS run in separate thread pools with clamped worker limits (`SHOPBOT_TTS_THREADS=2`), preventing audio generation from starving Ollama's LLM generation.
+- Real-time sentence segmenting ensures that TTS synthesis overlaps with LLM token streaming, significantly reducing perceived latency.
+
+---
+
+## Installation & Setup Guide
+
+### 1. Environment Setup
 
 ```powershell
-py -3.13 -m venv .venv
-.venv/Scripts/Activate.ps1
-python -m pip install -r requirements-lock.txt
+# Clone the repository
+git clone https://github.com/Qadeer572/E-Commerce-Order-Support-Assistant-Local-Conversational-AI-System_A02.git
+cd E-Commerce-Order-Support-Assistant-Local-Conversational-AI-System_A02
+
+# Create and activate virtual environment (Python 3.11-3.13 supported; 3.12 validated)
+python -m venv .venv
+.venv\Scripts\Activate.ps1
+
+# Install locked dependencies including Vosk and Piper-TTS
+pip install -r requirements-lock.txt
+```
+
+### 2. Download Offline Models
+
+```powershell
+# Download local MiniLM embedding model & Qwen tokenizer (HF offline ready)
 python scripts/prepare_models.py
+
+# Download Vosk speech model & Piper Lessac TTS ONNX voice
+python scripts/prepare_voice_models.py
+
+# Pull Ollama LLM model locally
 ollama pull qwen2.5:0.5b
-python scripts/validate_corpus.py
+```
+
+### 3. Seed Databases & Index Vectors
+
+```powershell
+# Validate fixtures and policy integrity
 python scripts/seed_data_check.py
+python scripts/validate_corpus.py
+
+# Seed the live SQLite shop catalog
+python scripts/set_stock.py --rebuild
+
+# Build the Chroma vector index from 63 corpus documents
 python scripts/index_documents.py
+```
+
+### 4. Run Development Server
+
+```powershell
+# Ensure Ollama daemon is running in a terminal
 ollama serve
-uvicorn backend.main:app --host 127.0.0.1 --port 8000 --env-file .env
+
+# Launch the FastAPI application server
+uvicorn backend.main:app --host 127.0.0.1 --port 8000 --reload
 ```
 
-If Ollama already runs, skip `ollama serve`. Copy `.env.example` to `.env` only when needed; existing environment variables also work. Open http://localhost:8000. No frontend package manager or build is required.
+Open your browser to: **`http://localhost:8000`**
 
-Model preparation requires internet once. It records exact Hugging Face commit revisions in `models/manifest.json`. Runtime embedding/tokenizer loading uses `local_files_only=True`; Chroma receives explicit embeddings and disables anonymized telemetry. Ollama uses local weights, `num_gpu=0`, `num_ctx=4096`, and at most 512 output tokens. After preparation, run offline with:
+---
 
-```powershell
-$env:HF_HUB_OFFLINE='1'
-$env:TRANSFORMERS_OFFLINE='1'
-python scripts/index_documents.py
-uvicorn backend.main:app --host 127.0.0.1 --port 8000
-```
+## Verification & Testing
 
-The UI can fall back to its system font when the optional Google font is unavailable; chat code and styles are served locally.
-
-## Corpus and incremental indexing
-
-`data/corpus/` contains **63 source documents**: 18 product specifications, 18 distinct product FAQs, 15 fictional order summaries, nine policy topics, and three catalog price summaries. They derive from `data/products.json`, `data/orders.json`, and `data/policy.md`; the manifest records provenance, document ID, type and applicable SKU/order ID. These are snapshots, not live inventory or fulfillment data. Policy documents clarify that ShopBot cannot actually change orders, initiate refunds, send labels, or contact carriers.
-
-The corpus produces **155 chunks**. MiniLM `all-MiniLM-L6-v2` supplies normalized 384-dimensional CPU embeddings; it is small enough for local execution. Its 256-wordpiece input limit motivates a 220-token chunk budget including title/entity prefixes, with 32-token overlap within oversized sections. Section boundaries are preserved where possible. Chunks preserve original text, prices, capitalization and line breaks using tokenizer character offsets; MiniLM decoding is never used to reconstruct evidence. Changing to this chunker requires `--rebuild`. Chunk IDs include document ID, ordinal and content hash.
-
-Chroma provides local disk persistence, cosine search, metadata filters and incremental upserts. Indexing tracks document hashes, embedding revision, dimensions and chunker settings. Unchanged documents are not embedded again. Changed documents are embedded before mutation; obsolete chunks and deleted documents are removed. A persistent incomplete-build marker prevents serving an interrupted revision. Rebuild explicitly after an interrupted update or model/chunker change:
+The repository contains **207 automated unit and integration tests** covering all three assignments:
 
 ```powershell
-# Stop the backend before updating the index.
-python scripts/index_documents.py
-python scripts/index_documents.py --rebuild
-```
-
-A process ownership lock prevents the server, benchmark and index writer from opening the same index simultaneously. An unchanged second run reports `unchanged=63`, with no duplicate inserts.
-
-## Retrieval, context and memory
-
-Queries request **top-k=3**, then discard similarity below **0.40**. The threshold was calibrated on the separate 30-question development set: the weakest positive scored 0.420 and strongest negative 0.346. Filtering or prompt limits can leave fewer than three usable chunks. Order queries use exact canonical order-ID metadata filters; other queries exclude order records. Recognized entity follow-ups use session metadata. Generated answers are never shared across sessions.
-
-Blocking embeddings/search run in a dedicated two-worker executor, with at most eight admitted jobs and a 1.5-second deadline including queue time. Timed-out work retains its admission slot until the worker actually finishes. A fixed daemon-worker pool bounds shutdown to 200 ms; permanently stuck native work requires restarting the server process and cannot grow an unbounded queue. Retrieval results use a 128-entry LRU cache with a 300-second TTL; keys include query, entity/type filters, model/index revisions, top-k and threshold. Transient errors are not cached. Same-session turns are serialized; separate sessions remain independent.
-
-The local Qwen tokenizer counts the complete chat-template prompt. A 4096-token context reserves 512 output tokens and 256 safety tokens, leaving 3328 prompt tokens. Instructions and current input take priority; evidence is capped at 1400 tokens, summary at 256, and recent complete exchanges at 800, with a final total check. Oversized mandatory input asks the user to shorten the question. Evidence is explicitly untrusted data: embedded commands do not acquire instruction authority; conflicting facts should be acknowledged. Conflicting structured price/stock/status/total fields for the same entity produce a deterministic clarification before generation; conflicts in free-form policy prose still depend on the model.
-
-The full transcript remains intact in ignored `data/chat_history.json`. The prompt uses a separate working view. A summary cursor records older messages already summarized; summaries have a three-second timeout and trimming fallback. Summary, cursor, intent and last entities persist alongside messages. Legacy message-only histories still load. Reset clears all working memory and transcript for the session.
-
-## Streaming API and failures
-
-`/ws/chat` still accepts `{session_id, message}` and returns ordinary `token` frames followed by `done`, or a terminal `error`. `/api/health` retains existing keys and adds `rag.ready`. History/session REST routes retain their shapes.
-
-Examples:
-
-| Input / condition | Behavior |
-| --- | --- |
-| `hi` or `my name is Qadeer Raza` | Natural local-model greeting |
-| `What is the capital of Pakistan?` | Store-domain redirect, no geography answer |
-| `Track ORD-99999` | No matching order; no other order evidence |
-| Weak or irrelevant evidence | Stream an explicit no-match notice, then a guarded conversational preference question |
-| Missing model/index, embedding/search failure | Safe temporary-unavailability reply |
-| Deadline or admission limit | Bounded fallback; other requests remain responsive |
-| Excessive prompt size | Shorten-question clarification |
-
-**Single Assignment 2 bonus: visible sources.** Grounded replies append a server-controlled `Sources:` footer through the same token frames. Only evidence actually included in the prompt is listed; paths are relative and deduplicated. Greetings, redirects and no-match replies have no footer.
-
-## Tests and measurements
-
-```powershell
+# Run the complete test suite
 python -m pytest
-# Run retrieval benchmarks while the backend is stopped (index ownership).
-python scripts/benchmark_rag.py --iterations 100 --concurrency 1 --output docs/benchmarks/rag-results-c1.json
-python scripts/benchmark_rag.py --iterations 100 --concurrency 5 --output docs/benchmarks/rag-results-c5.json
-# With the backend running, measure generation separately:
-python scripts/benchmark_rag.py --generation-only --websocket ws://127.0.0.1:8000/ws/chat --concurrency 5 --output docs/benchmarks/generation-c5.json
 ```
 
-Tests cover corpus limits, incremental shortening/deletion and embedding failures, exact order filters, cache revisions, timeout admission, full prompt limits, summary/reset/history compatibility, domain guards and streamed terminal frames. Unit tests replace external inference with deterministic doubles; measurements below use real MiniLM embeddings and the real disk index.
+### Test Suite Breakdown (207 Passed)
+- `tests/test_tool_calculator.py`: 8 tests (AST safety, percentages, divide-by-zero, complex expressions).
+- `tests/test_tool_catalog.py`: 5 tests (exact SKU lookup, category filtering, variant stock totals).
+- `tests/test_tool_calendar.py`: 5 tests (appointment booking, list, cancellation, date resolution).
+- `tests/test_crm.py`: 6 tests (customer isolation, password/CC data rejection, deterministic greeting).
+- `tests/test_orchestrator.py`: 7 tests (regex gate, decision JSON parsing, fallback triggers, fault injection).
+- `tests/test_speech_text.py`: 8 tests (sentence streaming segmentation, speech text sanitization).
+- `tests/test_transcript_normalizer.py`: 12 tests (currency, percentage, time/date normalization).
+- `tests/test_voice_manager_integration.py`: 3 tests (end-to-end voice turn with tool events).
+- `tests/test_voice_websocket.py`: 4 tests (WebSocket handshake, PCM audio streaming, audio frame delivery).
+- `tests/test_rag_*.py` & `tests/test_intent_triage.py`: 149 baseline tests from Assignments 1 & 2.
 
-Measured October 10, 2026 on this Windows CPU machine. Full hardware/version/model-revision records and raw durations are in `docs/benchmarks/`.
+### Running Benchmarks
+To replicate the benchmark measurements on your machine:
+```powershell
+python scripts/benchmark_voice.py --output docs/benchmarks/voice-results.json
+```
 
-| Measurement | One concurrent user | Five concurrent users |
-| --- | ---: | ---: |
-| Warm uncached retrieval p50 | 10.10 ms | 29.03 ms |
-| Warm uncached retrieval p95 | 16.09 ms | 41.87 ms |
-| Cached retrieval p95 | 0.0062 ms | 0.0048 ms |
-| Model/index cold load | 3825 ms | 3788 ms |
-| Holdout source/no-match checks | 30/30 | 30/30 |
+---
 
-Each run contains 100 uncached measurements plus 100 separately reported repeated-cache measurements. The unseen holdout contains 20 answerable and ten unanswerable queries. Source correctness accepts the expected specification or matching FAQ; it does not establish universal answer accuracy. Retrieval meets the sub-second target on this small corpus. The table above records the original 1.5B configuration. Generation/first-token timing is measured separately through real WebSocket traffic and can be much slower than retrieval; see `generation-c*.json`. The measured single-session first token was 7.57 seconds, with 10.46 seconds total. Five sessions completed in 7.45?14.61 seconds each; health requests during generation returned HTTP 200 in 57?375 ms. These timings include CPU generation queueing and are not retrieval latency.
+## Live Demonstration & Viva Guide
 
-## October 11 fixes and verification
+Use these exact queries during demonstration to showcase every capability:
 
-The default model is now **qwen2.5:0.5b** for faster CPU replies. Set `SHOPBOT_MODEL=qwen2.5:1.5b` for more model capacity at higher latency. Startup warms the model and common system prompt in the background; `SHOPBOT_KEEP_ALIVE=30m` keeps weights resident between requests. Ordinary answers are capped at 256 generated tokens; catalog lists can use 512, both subject to `SHOPBOT_MAX_TOKENS`. Full prompt budgeting continues to reserve the configured maximum.
+1. **Calculator Tool**:
+   - Query: *"What is 15% off $49.99?"*
+   - Shows: Tool badge `🧮 Using calculator…`, calculated result `$42.49`, LLM conversational response.
+2. **Live SQLite Catalog Query**:
+   - Query: *"Is ELEC-001 in stock right now?"*
+   - Shows: Reads live stock from `data/shop.db` with variant counts (Midnight Black: 60, Navy Blue: 20, Pearl White: 40).
+   - Live Edit: In PowerShell, run `python scripts/set_stock.py --sku ELEC-001 --stock 0`. Ask again: ShopBot immediately reports it is out of stock!
+3. **Support Calendar Tool**:
+   - Query: *"Book a support call for tomorrow at 2pm"*
+   - Shows: Books the appointment in `data/calendar.json` and confirms the scheduled date/time.
+4. **CRM Cross-Session Memory (Bonus)**:
+   - Query: *"My name is Sheharyar"* $\to$ Saves profile to `data/crm.db`.
+   - Start a new conversation and say *"Hello"* $\to$ ShopBot deterministically responds: *"Welcome back, Sheharyar! How can I help you today?"*
+5. **Real-Time Voice Mode**:
+   - Click the 🎙️ **Microphone button** in the UI. Speak naturally into your microphone.
+   - Shows: Live partial transcript, RMS silence detection, sentence-streamed Piper voice audio with base64 PCM frames. Click **"⏹ Stop Speech"** to test audio interruption.
+6. **RAG Knowledge Retrieval**:
+   - Query: *"What is the battery life of the ProSound earbuds?"*
+   - Shows: Grounded factual answer with `Sources: faqs/faq-ELEC-001.md, products/ELEC-001.md`.
+7. **Out-of-Scope Redirection**:
+   - Query: *"What is the capital of France?"*
+   - Shows: Polite store domain redirect without answering irrelevant trivia.
 
-Shopping requests such as `i need cheap product`, `list if prodcut`, and `what can I buy under $20?` stay in scope. Common product typos are normalized for routing, retrieval, and generation. Broad shopping queries retrieve the three indexed catalog summaries with top-k=3. Price limits and category terms filter **retrieved rows**, sorted by price, before prompt assembly; runtime answers never read fixture JSON. Catalog replies stream exact rows from the retrieved evidence retained in the budgeted prompt, without model-generated facts. Ordinary browsing supplies five matching options; explicit `all` requests supply up to 18, and `cheapest` supplies one. Other support replies use local model generation. No-match turns stream a safe notice immediately and use the model only for a guarded preference question, preventing unsupported inventory claims. Exact unknown-order and temporarily unavailable retrieval replies remain deterministic.
+---
 
-Fresh Python 3.13 verification: **149 tests passed**, fixture validation passed, and all 63 corpus documents validated. An unchanged indexing run reported `unchanged=63` before the chunker rebuild. The rebuilt index has 155 chunks. Windows history reads and writes now share a reentrant lock, atomic replacement retries brief file locks, and `done` is sent after persistence. Live HTTP/static serving and history read/reset/deletion checks passed.
+## Team & Project Attribution
 
-Measured on an Intel Core i5-1245U CPU, with the final model already loaded:
+| Name | Student ID | Core Responsibilities |
+| :--- | :--- | :--- |
+| **Sheharyar Ali** | **i230097** | Voice Pipeline (Vosk ASR, Piper TTS), Tool Orchestrator, Calculator & Calendar Tools, Latency Benchmarking |
+| **Qadeer Raza** | **i233059** | Frontend Voice UI & Audio Queuing, SQLite Shop DB, CRM Profile Store, Test Regressions & Documentation |
 
-| Check | First token | Total reply |
-| --- | ---: | ---: |
-| Product battery question | 2.97 s | 3.58 s |
-| Cheap product request | 35 ms | 46 ms |
-| Product list with typo | 38 ms | 46 ms |
-| Products under $20 | 34 ms | 40 ms |
-| No matching telescope documents | 27 ms | 904 ms |
-
-Five concurrent real WebSocket chats all ended with `done`, taking 3.39?6.36 seconds each. Updated five-user uncached retrieval p95 was **55.08 ms**, cached p95 **0.0062 ms**, with **30/30** holdout source/no-match checks. Earlier cold 1.5B inference took 11.45 seconds for the battery question; the direct installed-model comparison took 7.01 seconds for 1.5B versus 4.12 seconds for 0.5B. These are individual runs, not a guarantee or a controlled cold-to-cold comparison. Prompt/model caching, CPU load, history length and generation queueing affect latency.
-
-Raw evidence: `docs/benchmarks/model-comparison.json`, `shopping-speed-after.json`, `rag-results-2026-10-11-c5.json`, `generation-2026-10-11-c5.json`, and `api-checks-2026-10-11.json`. Reproduce shopping checks with `python scripts/check_shopping_chat.py` while the backend is running; run `python scripts/compare_local_models.py` with the backend stopped.
-
-## Limitations and submission
-
-This is a fictional, unauthenticated classroom demo. Anyone who knows a fixture order ID can ask about it; deployable order access requires authentication. Small-model grounding and prompt-injection resistance remain probabilistic. Semantic search can miss paraphrases or choose incomplete evidence; the small labeled sets do not prove general accuracy. Runtime is single-process; JSON history and index ownership are unsuitable for multiple server workers. CPU generation can queue under concurrent load. Summaries can lose details, while the full transcript remains available. No fulfillment actions are performed.
-
-Browser automation was unavailable in this execution environment. HTTP/static serving and real WebSocket behavior were checked; rendered desktop/mobile source-footer verification remains a manual check.
-
-Submit this source directory through a private repository or ZIP. Include corpus, manifest, preparation/indexing scripts, evaluation sets, tests and documentation. Exclude `.env`, `.venv`, model weights, generated vector store, logs and conversation history. Rebuild generated assets using the commands above. AI prompt provenance is recorded in `docs/ai-prompts.md` for viva discussion.
-
-## Team and attribution
-
-| Name | Student ID | Original project role |
-| --- | --- | --- |
-| Sheharyar Ali | i230097 | Backend, conversation manager, prompt engineering |
-| Qadeer Raza | i233059 | Frontend, LLM integration, testing and documentation |
-
-Course: Natural Language Processing. Assignment 2 extends the Assignment 1 codebase. The supplied assignment states October 8, 2026 at 11:59 pm; no revised deadline is documented. All product/order/customer records are fictional.
+**Course**: Natural Language Processing (Assignment 3 — Voice & Tools)  
+All product fixtures, order numbers, and customer profiles are entirely fictional.

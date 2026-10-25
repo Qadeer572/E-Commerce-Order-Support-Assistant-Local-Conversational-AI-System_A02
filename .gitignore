@@ -55,3 +55,14 @@ data/vector_store/
 %SystemDrive%/
 .pytest-tmp/
 artifacts/
+
+# Assignment 3 runtime artifacts
+data/shop.db
+data/calendar.json
+data/calendar.tmp
+data/crm.db
+data/*.db-journal
+data/*.db-wal
+data/*.db-shm
+*.wav
+*.sqlite

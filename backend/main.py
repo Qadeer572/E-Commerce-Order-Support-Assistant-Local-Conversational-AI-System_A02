@@ -22,7 +22,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 
-from backend.config import ALLOWED_ORIGINS
+from backend.config import ALLOWED_ORIGINS, VOICE_ENABLED, TOOLS_ENABLED
 from backend.llm_engine import LLMEngine, LLMEngineError
 from backend.conversation_manager.session import SessionStore, Turn
 from backend.conversation_manager import ConversationManager
@@ -31,6 +31,11 @@ from backend.config import VECTOR_DIR, MODEL_DIR
 from backend.retrieval.embeddings import LocalEmbedder, load_generation_tokenizer, ConservativeTokenizer
 from backend.retrieval.store import VectorStore
 from backend.retrieval.service import Retriever
+from backend.crm_store import CRMStore
+from backend.tools import build_orchestrator
+from backend.voice.asr import VoskASR
+from backend.voice.tts import PiperTTS
+from backend.voice.ws import handle_voice
 
 # ── Logging ───────────────────────────────────────────────────────────────────
 logging.basicConfig(
@@ -43,6 +48,10 @@ logger = logging.getLogger("shopbot.main")
 _llm_engine:    LLMEngine           = None
 _session_store: SessionStore        = None
 _conv_manager:  ConversationManager = None
+_asr:           VoskASR             = None
+_tts:           PiperTTS            = None
+_crm_store:     CRMStore            = None
+_tools                              = None
 
 FRONTEND_DIR = Path(__file__).parent.parent / "frontend"
 
@@ -50,30 +59,44 @@ FRONTEND_DIR = Path(__file__).parent.parent / "frontend"
 # ── Application lifespan ──────────────────────────────────────────────────────
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    global _llm_engine, _session_store, _conv_manager
+    global _llm_engine, _session_store, _conv_manager, _asr, _tts, _crm_store, _tools
 
     logger.info("ShopBot starting up…")
     _llm_engine    = LLMEngine()
     warmup = asyncio.create_task(_llm_engine.warmup()) if hasattr(_llm_engine, "warmup") else None
     _session_store = SessionStore()
-    def load_rag():
+    _crm_store     = CRMStore()
+    _tools         = build_orchestrator(_llm_engine, _crm_store) if TOOLS_ENABLED else None
+    _asr           = VoskASR()
+    _tts           = PiperTTS()
+
+    def load_services():
+        rag_res = None
+        tokenizer = None
         try:
             tokenizer = load_generation_tokenizer()
         except Exception:
             logger.warning("Generation tokenizer unavailable; using conservative fallback count")
-            return Retriever(), ConservativeTokenizer()
-        try:
-            embedder = LocalEmbedder()
-            store = VectorStore(VECTOR_DIR, reader=True)
-            if store.manifest["settings"]["model_revision"] != embedder.revision:
-                store.close()
-                raise RuntimeError("Index model revision mismatch")
-            return Retriever(embedder, store), tokenizer
-        except Exception:
-            logger.exception("RAG unavailable; chat will use safe fallbacks")
-            return Retriever(), tokenizer
-    retriever, tokenizer = await asyncio.to_thread(load_rag)
-    _conv_manager = ConversationManager(_llm_engine, retriever, tokenizer)
+            rag_res = (Retriever(), ConservativeTokenizer())
+        if rag_res is None:
+            try:
+                embedder = LocalEmbedder()
+                store = VectorStore(VECTOR_DIR, reader=True)
+                if store.manifest["settings"]["model_revision"] != embedder.revision:
+                    store.close()
+                    raise RuntimeError("Index model revision mismatch")
+                rag_res = (Retriever(embedder, store), tokenizer)
+            except Exception:
+                logger.exception("RAG unavailable; chat will use safe fallbacks")
+                rag_res = (Retriever(), tokenizer or ConservativeTokenizer())
+
+        if VOICE_ENABLED:
+            _asr.load()
+            _tts.load()
+        return rag_res
+
+    retriever, tokenizer = await asyncio.to_thread(load_services)
+    _conv_manager = ConversationManager(_llm_engine, retriever, tokenizer, tools=_tools, crm=_crm_store)
 
     # Periodic session cleanup task (every 10 minutes)
     async def _cleanup_task():
@@ -102,6 +125,10 @@ async def lifespan(app: FastAPI):
     if warmup:
         warmup.cancel()
         await asyncio.gather(warmup, return_exceptions=True)
+    if _asr:
+        _asr.close()
+    if _tts:
+        _tts.close()
     await asyncio.to_thread(retriever.close)
     logger.info("ShopBot shutting down.")
 
@@ -148,7 +175,34 @@ async def health():
         "active_sessions": _session_store.count(),
         "llm": llm_health,
         "rag": {"ready": _conv_manager.retriever.ready if hasattr(_conv_manager.retriever, "ready") else True},
+        "voice": {
+            "asr_ready": _asr.ready if _asr and hasattr(_asr, "ready") else False,
+            "tts_ready": _tts.ready if _tts and hasattr(_tts, "ready") else False,
+        },
+        "tools": _tools.names() if _tools and hasattr(_tools, "names") else [],
     }
+
+
+@app.get("/api/crm/{user_id}")
+async def get_crm_profile(user_id: str):
+    """Retrieve saved CRM profile for demo/testing."""
+    if _crm_store is None:
+        raise HTTPException(status_code=503, detail="CRM store unavailable")
+    profile = await asyncio.to_thread(_crm_store.get, user_id)
+    if not profile:
+        raise HTTPException(status_code=404, detail="No profile found for user")
+    return {"user_id": user_id, "profile": profile}
+
+
+@app.delete("/api/crm/{user_id}")
+async def delete_crm_profile(user_id: str):
+    """Delete saved CRM profile for demo/testing."""
+    if _crm_store is None:
+        raise HTTPException(status_code=503, detail="CRM store unavailable")
+    deleted = await asyncio.to_thread(_crm_store.delete, user_id)
+    if not deleted:
+        raise HTTPException(status_code=404, detail="No profile found for user")
+    return {"status": "deleted", "user_id": user_id}
 
 
 @app.post("/api/session")
@@ -207,14 +261,20 @@ async def delete_session_history(session_id: str):
     return {"status": "deleted", "session_id": session_id}
 
 
-# ── WebSocket Endpoint ────────────────────────────────────────────────────────
+# ── WebSocket Endpoints ───────────────────────────────────────────────────────
+
+@app.websocket("/ws/voice")
+async def websocket_voice(websocket: WebSocket):
+    """Streaming voice WebSocket endpoint (microphone audio in, audio out)."""
+    await handle_voice(websocket, _asr, _tts, _session_store, _conv_manager)
+
 
 @app.websocket("/ws/chat")
 async def websocket_chat(websocket: WebSocket):
     """
     Streaming chat WebSocket endpoint.
 
-    Incoming JSON:  { "session_id": "...", "message": "user text" }
+    Incoming JSON:  { "session_id": "...", "message": "user text", "user_id": "..." (optional) }
     Outgoing JSON (streamed):
         { "type": "token",  "content": "partial text" }
         { "type": "done",   "content": "" }
@@ -246,6 +306,11 @@ async def websocket_chat(websocket: WebSocket):
 
             session_id = data.get("session_id", "").strip()
             user_msg   = data.get("message", "").strip()
+            user_id    = data.get("user_id")
+            if not isinstance(user_id, str) or not user_id.strip():
+                user_id = None
+            else:
+                user_id = user_id.strip()
 
             if not session_id:
                 await _send_error(websocket, "Missing 'session_id' field")
@@ -263,7 +328,7 @@ async def websocket_chat(websocket: WebSocket):
 
             # ── Stream response ────────────────────────────────────────────
             try:
-                async for token in _conv_manager.handle_turn(session, user_msg):
+                async for token in _conv_manager.handle_turn(session, user_msg, user_id=user_id):
                     await websocket.send_json({"type": "token", "content": token})
 
                 async with session.lock:

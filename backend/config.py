@@ -18,7 +18,8 @@ POLICY_FILE   = DATA_DIR / "policy.md"
 HISTORY_FILE  = DATA_DIR / "chat_history.json"
 
 # ── Ollama / LLM ─────────────────────────────────────────────────────────────
-OLLAMA_HOST  = os.getenv("OLLAMA_HOST", "http://localhost:11434")
+_raw_host = os.getenv("OLLAMA_HOST", "http://127.0.0.1:11434").strip()
+OLLAMA_HOST = (_raw_host if _raw_host.startswith("http") else f"http://{_raw_host}").replace("0.0.0.0", "127.0.0.1")
 MODEL_NAME   = os.getenv("SHOPBOT_MODEL", "qwen2.5:0.5b")
 
 # Generation parameters
@@ -51,3 +52,31 @@ VECTOR_DIR = DATA_DIR / "vector_store"
 CONTEXT_TOKENS = 4096
 RAG_THRESHOLD = float(os.getenv("SHOPBOT_RAG_THRESHOLD", "0.40"))
 RAG_TIMEOUT = float(os.getenv("SHOPBOT_RAG_TIMEOUT", "1.5"))
+
+# ── Assignment 3: voice ───────────────────────────────────────────────────────
+def _flag(name: str, default: str) -> bool:
+    return os.getenv(name, default).strip().lower() in ("1", "true", "yes", "on")
+
+
+VOICE_ENABLED = _flag("SHOPBOT_VOICE_ENABLED", "1")
+ASR_MODEL_DIR = Path(os.getenv("SHOPBOT_ASR_MODEL_DIR", str(MODEL_DIR / "vosk-model-small-en-us-0.15")))
+ASR_SAMPLE_RATE = 16000
+# Trailing silence (ms) after which the Vosk endpointer ends an utterance.
+ASR_ENDPOINT_SILENCE_MS = int(os.getenv("SHOPBOT_ASR_ENDPOINT_MS", "600"))
+ASR_MAX_JOBS = int(os.getenv("SHOPBOT_ASR_MAX_JOBS", "2"))
+TTS_VOICE_PATH = Path(os.getenv("SHOPBOT_TTS_VOICE", str(MODEL_DIR / "piper" / "en_US-lessac-medium.onnx")))
+TTS_MAX_JOBS = int(os.getenv("SHOPBOT_TTS_MAX_JOBS", "2"))
+TTS_THREADS = int(os.getenv("SHOPBOT_TTS_THREADS", "2"))
+AUDIO_CHUNK_SAMPLES = int(os.getenv("SHOPBOT_AUDIO_CHUNK_SAMPLES", "4000"))
+VOICE_MAX_UTTERANCE_S = int(os.getenv("SHOPBOT_VOICE_MAX_UTTERANCE_S", "30"))
+
+# ── Assignment 3: tools ───────────────────────────────────────────────────────
+TOOLS_ENABLED = _flag("SHOPBOT_TOOLS_ENABLED", "1")
+# Optional larger model used only for the tool-decision call.
+TOOL_MODEL = os.getenv("SHOPBOT_TOOL_MODEL", "").strip() or None
+TOOL_DECISION_TIMEOUT = float(os.getenv("SHOPBOT_TOOL_DECISION_TIMEOUT", "5.0"))
+TOOL_TIMEOUT = float(os.getenv("SHOPBOT_TOOL_TIMEOUT", "2.0"))
+TOOL_FAULT = os.getenv("SHOPBOT_TOOL_FAULT", "").strip()  # "<tool>:timeout|error"
+SHOP_DB_FILE = Path(os.getenv("SHOPBOT_SHOP_DB", str(DATA_DIR / "shop.db")))
+CALENDAR_FILE = Path(os.getenv("SHOPBOT_CALENDAR_FILE", str(DATA_DIR / "calendar.json")))
+CRM_DB_FILE = Path(os.getenv("SHOPBOT_CRM_DB", str(DATA_DIR / "crm.db")))

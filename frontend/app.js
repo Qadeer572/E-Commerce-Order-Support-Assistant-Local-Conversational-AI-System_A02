@@ -148,6 +148,16 @@ const $capOrder        = document.getElementById('cap-order');
 const $capPolicy       = document.getElementById('cap-policy');
 const $historyList     = document.getElementById('history-list');
 
+// ── Voice DOM refs (Assignment 3) ───────────────────────────────────────────
+const $voiceBtn         = document.getElementById('voice-btn');
+const $voiceBar         = document.getElementById('voice-bar');
+const $voiceStateText   = document.getElementById('voice-state-text');
+const $voiceTranscriptPreview = document.getElementById('voice-transcript-preview');
+const $voiceStopBtn     = document.getElementById('voice-stop-btn');
+const $voiceDoneBtn     = document.getElementById('voice-done-btn');
+const $voiceCancelBtn   = document.getElementById('voice-cancel-btn');
+const $headerVoicePill  = document.getElementById('header-voice-pill');
+
 // ── Session management ────────────────────────────────────────────────────────
 function loadOrCreateSessionId() {
   let id = sessionStorage.getItem(CONFIG.SESSION_KEY);
@@ -462,16 +472,53 @@ async function sendMessage(text) {
 }
 
 // ── DOM helpers ───────────────────────────────────────────────────────────────
-function appendUserMessage(text) {
+let currentToolChip = null;
+
+function appendToolChip(name, args) {
+  const icon = name === 'calculator' ? '🧮' : (name === 'catalog_query' ? '📦' : (name === 'support_calendar' ? '📅' : '👤'));
+  const chip = document.createElement('div');
+  chip.className = 'tool-chip tool-running';
+  chip.innerHTML = `<span>${icon}</span> Using <span class="tool-chip-name">${escapeHtml(name)}</span>…`;
+  $messagesList.appendChild(chip);
+  currentToolChip = chip;
+  scrollToBottom();
+}
+
+function updateToolChip(name, ok, elapsedMs) {
+  if (currentToolChip) {
+    currentToolChip.classList.remove('tool-running');
+    const icon = ok ? '✓' : '⚠️';
+    const status = ok ? 'Completed' : 'Failed';
+    currentToolChip.innerHTML = `<span>${icon}</span> Tool <span class="tool-chip-name">${escapeHtml(name)}</span> ${status} <span class="tool-chip-time">(${elapsedMs}ms)</span>`;
+    currentToolChip = null;
+  }
+}
+
+function appendMetricsChip(bubble, metrics) {
+  if (!metrics || !bubble) return;
+  const chip = document.createElement('div');
+  chip.className = 'metrics-chip';
+  const parts = [];
+  if (metrics.asr_finalize_ms) parts.push(`ASR: ${metrics.asr_finalize_ms}ms`);
+  if (metrics.tool_ms) parts.push(`Tool: ${metrics.tool_ms}ms`);
+  if (metrics.llm_first_token_ms) parts.push(`LLM: ${Math.round(metrics.llm_first_token_ms)}ms`);
+  if (metrics.tts_first_audio_ms) parts.push(`TTS: ${Math.round(metrics.tts_first_audio_ms)}ms`);
+  if (metrics.end_of_speech_to_first_audio_ms) parts.push(`Latency: ${Math.round(metrics.end_of_speech_to_first_audio_ms)}ms`);
+  chip.textContent = `⚡ ` + parts.join(' · ');
+  bubble.parentElement.appendChild(chip);
+}
+
+function appendUserMessage(text, isVoice = false) {
   const div = document.createElement('div');
   div.className = 'message message-user';
+  const voiceTag = isVoice ? '<span class="voice-tag">🎙️ Voice</span>' : '';
   div.innerHTML = `
     <div class="message-avatar">
       <span>👤</span>
     </div>
     <div class="message-content">
       <div class="message-bubble">${escapeHtml(text)}</div>
-      <div class="message-time">You</div>
+      <div class="message-time">You ${voiceTag}</div>
     </div>`;
   $messagesList.appendChild(div);
 }
@@ -797,6 +844,267 @@ $suggestionBtns.forEach(btn => {
     }
   });
 });
+
+// ── Voice Client Logic (Assignment 3: Vosk ASR + Piper TTS) ─────────────────
+let voiceWs = null;
+let audioContext = null;
+let micStream = null;
+let scriptNode = null;
+let isRecording = false;
+let playbackContext = null;
+let nextStartTime = 0;
+let activeAudioSources = [];
+
+async function toggleVoiceRecording() {
+  if (isRecording) {
+    finishVoiceSpeaking();
+  } else {
+    await startVoiceRecording();
+  }
+}
+
+async function startVoiceRecording() {
+  if (isStreaming) {
+    showToast('Please wait for the current response to finish.', 'error');
+    return;
+  }
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    showToast('Microphone access is not supported in this browser.', 'error');
+    return;
+  }
+
+  try {
+    micStream = await navigator.mediaDevices.getUserMedia({ audio: { channelCount: 1, sampleRate: 16000 } });
+  } catch (err) {
+    showToast('Microphone access was denied or is unavailable.', 'error');
+    return;
+  }
+
+  isRecording = true;
+  if ($voiceBtn) $voiceBtn.classList.add('recording');
+  if ($voiceBar) $voiceBar.style.display = 'flex';
+  if ($voiceStateText) $voiceStateText.textContent = 'Listening…';
+  if ($voiceTranscriptPreview) $voiceTranscriptPreview.textContent = 'Listening for speech…';
+  if ($voiceStopBtn) $voiceStopBtn.style.display = 'none';
+
+  const voiceWsUrl = `ws://${location.host}/ws/voice`;
+  voiceWs = new WebSocket(voiceWsUrl);
+  voiceWs.binaryType = 'arraybuffer';
+
+  voiceWs.onopen = () => {
+    voiceWs.send(JSON.stringify({ type: 'start', session_id: sessionId, tts: true }));
+  };
+
+  voiceWs.onmessage = (event) => {
+    if (typeof event.data === 'string') {
+      try {
+        const frame = JSON.parse(event.data);
+        handleVoiceFrame(frame);
+      } catch (e) {
+        console.error('Voice frame parse error:', e);
+      }
+    }
+  };
+
+  voiceWs.onerror = (e) => {
+    console.error('Voice WS error:', e);
+  };
+
+  voiceWs.onclose = () => {
+    cleanupRecordingNodes();
+  };
+
+  try {
+    audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    const source = audioContext.createMediaStreamSource(micStream);
+    const bufferSize = 4096;
+    scriptNode = audioContext.createScriptProcessor(bufferSize, 1, 1);
+
+    scriptNode.onaudioprocess = (audioEvent) => {
+      if (!isRecording || !voiceWs || voiceWs.readyState !== WebSocket.OPEN) return;
+      const inputData = audioEvent.inputBuffer.getChannelData(0);
+      const inputRate = audioContext.sampleRate;
+      const targetRate = 16000;
+
+      let resampled;
+      if (inputRate === targetRate) {
+        resampled = inputData;
+      } else {
+        const ratio = inputRate / targetRate;
+        const newLength = Math.round(inputData.length / ratio);
+        resampled = new Float32Array(newLength);
+        for (let i = 0; i < newLength; i++) {
+          const pos = i * ratio;
+          const index = Math.floor(pos);
+          const frac = pos - index;
+          const s0 = inputData[index] || 0;
+          const s1 = inputData[index + 1] || s0;
+          resampled[i] = s0 + frac * (s1 - s0);
+        }
+      }
+
+      const pcm16 = new Int16Array(resampled.length);
+      for (let i = 0; i < resampled.length; i++) {
+        const s = Math.max(-1, Math.min(1, resampled[i]));
+        pcm16[i] = s < 0 ? s * 0x8000 : s * 0x7FFF;
+      }
+
+      voiceWs.send(pcm16.buffer);
+    };
+
+    source.connect(scriptNode);
+    scriptNode.connect(audioContext.destination);
+  } catch (err) {
+    console.error('AudioContext setup error:', err);
+    cleanupRecordingNodes();
+  }
+}
+
+function finishVoiceSpeaking() {
+  if (voiceWs && voiceWs.readyState === WebSocket.OPEN) {
+    voiceWs.send(JSON.stringify({ type: 'end_of_speech' }));
+  }
+  cleanupRecordingNodes();
+  if ($voiceBar) $voiceStateText.textContent = 'Processing…';
+}
+
+function cancelVoiceRecording() {
+  if (voiceWs) {
+    try { voiceWs.close(); } catch (e) {}
+  }
+  cleanupRecordingNodes();
+  if ($voiceBar) $voiceBar.style.display = 'none';
+}
+
+function cleanupRecordingNodes() {
+  isRecording = false;
+  if ($voiceBtn) $voiceBtn.classList.remove('recording');
+  if (scriptNode) {
+    try { scriptNode.disconnect(); } catch (e) {}
+    scriptNode = null;
+  }
+  if (micStream) {
+    micStream.getTracks().forEach(t => t.stop());
+    micStream = null;
+  }
+  if (audioContext && audioContext.state !== 'closed') {
+    try { audioContext.close(); } catch (e) {}
+    audioContext = null;
+  }
+}
+
+function handleVoiceFrame(frame) {
+  const { type, content, text, data, name, ok, elapsed_ms } = frame;
+
+  if (type === 'ready') {
+    if ($voiceStateText) $voiceStateText.textContent = 'Listening…';
+  } else if (type === 'partial_transcript') {
+    if (text && $voiceTranscriptPreview) {
+      $voiceTranscriptPreview.textContent = `"${text}…"`;
+    }
+  } else if (type === 'final_transcript') {
+    if ($voiceBar) $voiceBar.style.display = 'none';
+    cleanupRecordingNodes();
+    appendUserMessage(text, /* isVoice */ true);
+    scrollToBottom();
+    // Start bot turn
+    isStreaming = true;
+    hideTypingIndicator();
+    setStatus('typing');
+    $currentBotBubble = appendBotMessage('', true);
+    currentBotText = '';
+  } else if (type === 'no_speech') {
+    if ($voiceStateText) $voiceStateText.textContent = 'No speech detected';
+    setTimeout(() => {
+      cancelVoiceRecording();
+    }, 1200);
+  } else if (type === 'tool_call') {
+    appendToolChip(name, frame.arguments);
+  } else if (type === 'tool_result') {
+    updateToolChip(name, ok, elapsed_ms);
+  } else if (type === 'token') {
+    currentBotText += content;
+    renderStreamingContent($currentBotBubble, currentBotText);
+    scrollToBottom();
+  } else if (type === 'audio') {
+    playPcm16Chunk(data, frame.sample_rate || 22050);
+  } else if (type === 'audio_end') {
+    // Spoken audio finished streaming
+  } else if (type === 'metrics') {
+    appendMetricsChip($currentBotBubble, frame);
+  } else if (type === 'done') {
+    finishStreaming(false);
+  } else if (type === 'error') {
+    showToast(content, 'error');
+    finishStreaming(false);
+  }
+}
+
+function playPcm16Chunk(base64Data, sampleRate) {
+  if (!playbackContext) {
+    playbackContext = new (window.AudioContext || window.webkitAudioContext)({ sampleRate });
+    nextStartTime = playbackContext.currentTime;
+  }
+  if (playbackContext.state === 'suspended') {
+    playbackContext.resume();
+  }
+
+  if ($voiceStopBtn) $voiceStopBtn.style.display = 'inline-block';
+
+  const binaryString = atob(base64Data);
+  const len = binaryString.length;
+  const bytes = new Uint8Array(len);
+  for (let i = 0; i < len; i++) {
+    bytes[i] = binaryString.charCodeAt(i);
+  }
+
+  const int16 = new Int16Array(bytes.buffer);
+  const float32 = new Float32Array(int16.length);
+  for (let i = 0; i < int16.length; i++) {
+    float32[i] = int16[i] / 32768.0;
+  }
+
+  const audioBuffer = playbackContext.createBuffer(1, float32.length, sampleRate);
+  audioBuffer.copyToChannel(float32, 0);
+
+  const source = playbackContext.createBufferSource();
+  source.buffer = audioBuffer;
+  source.connect(playbackContext.destination);
+
+  const now = playbackContext.currentTime;
+  const startTime = Math.max(now, nextStartTime);
+  source.start(startTime);
+  nextStartTime = startTime + audioBuffer.duration;
+
+  activeAudioSources.push(source);
+  source.onended = () => {
+    const idx = activeAudioSources.indexOf(source);
+    if (idx !== -1) activeAudioSources.splice(idx, 1);
+    if (activeAudioSources.length === 0 && $voiceStopBtn) {
+      $voiceStopBtn.style.display = 'none';
+    }
+  };
+}
+
+function stopAllAudioPlayback() {
+  for (const s of activeAudioSources) {
+    try { s.stop(); } catch (e) {}
+  }
+  activeAudioSources = [];
+  if (playbackContext) {
+    nextStartTime = playbackContext.currentTime;
+  }
+  if ($voiceStopBtn) $voiceStopBtn.style.display = 'none';
+  if (voiceWs && voiceWs.readyState === WebSocket.OPEN) {
+    voiceWs.send(JSON.stringify({ type: 'stop_audio' }));
+  }
+}
+
+// ── Voice Event Listeners ────────────────────────────────────────────────────
+if ($voiceBtn) $voiceBtn.addEventListener('click', toggleVoiceRecording);
+if ($voiceDoneBtn) $voiceDoneBtn.addEventListener('click', finishVoiceSpeaking);
+if ($voiceCancelBtn) $voiceCancelBtn.addEventListener('click', cancelVoiceRecording);
+if ($voiceStopBtn) $voiceStopBtn.addEventListener('click', stopAllAudioPlayback);
 
 // ── Initialise ────────────────────────────────────────────────────────────────
 function init() {

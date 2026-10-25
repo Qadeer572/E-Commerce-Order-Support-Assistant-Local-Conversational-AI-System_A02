@@ -94,6 +94,27 @@ class LLMEngine:
             logger.error(f"LLMEngine unexpected error: {e}")
             raise LLMEngineError(f"Inference failed: {str(e)}") from e
 
+    async def decide_json(self, messages: list[dict], model: str | None = None, num_predict: int = 96) -> str:
+        """
+        One short non-streaming call in Ollama JSON mode at temperature 0.
+
+        Used by the tool orchestrator to pick a tool. num_ctx/num_gpu match stream()
+        so Ollama does not reload the model between decision and answer.
+        """
+        try:
+            response = await self.client.chat(
+                model=model or self.model,
+                messages=messages,
+                stream=False,
+                format="json",
+                keep_alive=MODEL_KEEP_ALIVE,
+                options={"temperature": 0, "num_predict": num_predict, "num_ctx": 4096, "num_gpu": 0,
+                         "num_thread": NUM_THREADS if NUM_THREADS > 0 else None},
+            )
+            return response["message"]["content"]
+        except Exception as e:
+            raise LLMEngineError(f"Tool decision failed: {e}") from e
+
     async def warmup(self):
         """Load CPU weights ahead of the first chat; failure leaves chat available."""
         from backend.conversation_manager.prompt_builder import RULES
