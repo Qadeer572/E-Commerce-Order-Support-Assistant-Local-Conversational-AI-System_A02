@@ -36,9 +36,11 @@ def _keywords(query: str) -> list[str]:
 def search(args: CatalogArgs, db_path: Path) -> list[dict]:
     """Build a parameterized query. User text only ever travels as bound parameters."""
     clauses, params = [], []
-    if args.sku:
+    sku_match = re.search(r"\b([A-Z]{3,5}-\d{3})\b", (args.query or ""), re.I)
+    target_sku = args.sku or (sku_match.group(1).upper() if sku_match else None)
+    if target_sku:
         clauses.append("sku = ?")
-        params.append(args.sku)
+        params.append(target_sku)
     if args.category:
         clauses.append("category = ?")
         params.append(args.category)
@@ -50,10 +52,11 @@ def search(args: CatalogArgs, db_path: Path) -> list[dict]:
         params.append(args.max_price)
     if args.in_stock_only:
         clauses.append("stock > 0")
-    for word in _keywords(args.query or ""):
-        clauses.append("(name LIKE ? ESCAPE '\\' OR category LIKE ? ESCAPE '\\' OR description LIKE ? ESCAPE '\\')")
+    search_text = args.query if (not sku_match and args.query) else ""
+    for word in _keywords(search_text):
+        clauses.append("(sku LIKE ? ESCAPE '\\' OR name LIKE ? ESCAPE '\\' OR category LIKE ? ESCAPE '\\' OR description LIKE ? ESCAPE '\\')")
         pattern = "%" + word.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_") + "%"
-        params.extend([pattern] * 3)
+        params.extend([pattern] * 4)
     where = " WHERE " + " AND ".join(clauses) if clauses else ""
     sql = f"SELECT sku, name, category, price, stock FROM products{where} ORDER BY {_SORTS[args.sort]} LIMIT ?"
     conn = shop_db.connect(db_path)

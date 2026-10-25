@@ -92,7 +92,8 @@ class CalculatorTool(Tool):
         r"\d\s*[-+*/x%]\s*\d|\d\s*%|\b(?:percent|discount|tax|total|times|multiplied|divided|plus|minus)\b"
         r"|\bhow much for \w+|\b\d+\s*(?:items?|units?|pieces?)\b", re.I)
     examples = [
-        ("what is 15% off 49.99 times 3", {"expression": "49.99*3*(1-0.15)"}),
+        ("what is 15% off 49.99", {"expression": "49.99*(1-0.15)"}),
+        ("calculate (12.99 * 3) + 5.50", {"expression": "(12.99*3)+5.50"}),
         ("total for 4 items at $12.50 plus 8% tax", {"expression": "4*12.50*(1+0.08)"}),
     ]
 
