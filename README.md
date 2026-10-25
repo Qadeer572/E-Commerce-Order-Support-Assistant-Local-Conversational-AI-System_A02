@@ -119,7 +119,9 @@ flowchart TD
 The voice subsystem operates entirely offline and provides a bidirectional voice conversation experience over `/ws/voice`:
 
 ### 1. Speech-to-Text (Vosk ASR)
-- **Model**: `vosk-model-small-en-us-0.15` (compact 40 MB Kaldi-based offline speech recognizer).
+- **Model**: `vosk-model-en-us-0.22-lgraph` (128 MB Kaldi-based offline speech recognizer). Proper names may still require a typed correction.
+- **Final recognition**: Local `faster-whisper` small.en re-decodes the original microphone audio on CPU with INT8 computation; Vosk supplies live previews and endpoint detection. Run `scripts/prepare_voice_models.py` to download both models. `/api/health` reports `voice.final_asr` so a Vosk fallback is visible. Final recognition takes additional CPU time, and exact spelling of unfamiliar names still requires review.
+- **Transcript review**: After speaking, edit the recognized text in the message box and press Send. The chatbot receives only the confirmed text and still speaks its response. Cancel discards the voice review.
 - **Audio Stream**: Raw PCM16 mono at 16,000 Hz, sent in 20–40 ms chunks (640–1280 bytes) over WebSocket.
 - **Endpointing**: Energetic RMS trailing silence detection (`SILENCE_RMS = 400`, default `600 ms` silence) combined with Vosk's `AcceptWaveform` to detect end-of-speech with low latency.
 - **Inverse Text Normalization**: Raw phoneme transcripts are normalized into conventional text representation:
@@ -181,6 +183,7 @@ Incoming Turn ──▶ Candidate Gate (<0.2 ms) ──▶ LLM JSON Decision (JS
 - **Example**: *"What is 15% off $49.99?"* $\to$ Calculates `49.99 * (1 - 0.15) = 42.4915` $\to$ `"$42.49"`.
 
 ### 2. `catalog_query`
+- Product-list requests and exact SKU lookups use direct argument extraction. Replies render live database names, prices, stock, and single-product variants without a final LLM call or unrelated document citations. Lists return up to 20 matching products; availability, category aliases, and budget filters apply to the database query.
 - **Arguments**: `{"sku": "ELEC-001"}` or `{"category": "Electronics", "max_price": 50.0, "in_stock_only": true}`
 - **Capabilities**: Reads live inventory and variant breakdown (`Midnight Black: 60`, `Pearl White: 40`).
 - **Live Stock Modification**: Use `python scripts/set_stock.py --sku ELEC-001 --stock 0` to demonstrate live changes during viva!

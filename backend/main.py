@@ -177,6 +177,7 @@ async def health():
         "rag": {"ready": _conv_manager.retriever.ready if hasattr(_conv_manager.retriever, "ready") else True},
         "voice": {
             "asr_ready": _asr.ready if _asr and hasattr(_asr, "ready") else False,
+            "final_asr": "whisper" if getattr(_asr, "final_model", None) is not None else "vosk",
             "tts_ready": _tts.ready if _tts and hasattr(_tts, "ready") else False,
         },
         "tools": _tools.names() if _tools and hasattr(_tools, "names") else [],

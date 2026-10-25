@@ -5,6 +5,8 @@ ConversationManager.handle_turn and SessionStore as typed chat. Text frames neve
 
 Client -> server: {"type":"start","session_id",...}, binary PCM16 mono 16 kHz frames,
                   {"type":"end_of_speech"}, {"type":"stop_audio"}
+                  Set review_transcript=true on start to defer chat until
+                  {"type":"confirm_transcript","text":"edited text"}.
 Server -> client: ready, partial_transcript, final_transcript, no_speech, tool_call, tool_result,
                   token, audio, done, audio_end, metrics, tts_error, error
 """
@@ -41,6 +43,8 @@ class VoiceConnection:
         self.session_id: Optional[str] = None
         self.user_id: Optional[str] = None
         self.speak = True
+        self.review_transcript = False
+        self.pending_transcript: Optional[ASREvent] = None
         self.stream = None
         self.turn_task: Optional[asyncio.Task] = None
         self.audio_stopped = asyncio.Event()
@@ -73,7 +77,7 @@ class VoiceConnection:
             if message["type"] == "websocket.disconnect":
                 raise WebSocketDisconnect()
             if message.get("bytes") is not None:
-                if self.session_id and not self.busy:
+                if self.session_id and not self.busy and self.pending_transcript is None:
                     await self._on_audio(message["bytes"])
             elif message.get("text") is not None:
                 await self._on_control(message["text"])
@@ -89,7 +93,18 @@ class VoiceConnection:
             await self._on_start(data)
         elif self.session_id is None:
             await self.send({"type": "error", "content": "Send a start message first"})
+        elif kind == "confirm_transcript":
+            text = data.get("text")
+            if not isinstance(text, str) or not text.strip() or len(text) > MAX_MESSAGE_CHARS:
+                await self.send({"type": "error", "content": "Enter a transcript between 1 and 2000 characters"})
+            elif self.pending_transcript is None or self.busy:
+                await self.send({"type": "error", "content": "No voice transcript is awaiting confirmation"})
+            else:
+                final, self.pending_transcript = self.pending_transcript, None
+                self.turn_task = asyncio.create_task(self._run_turn(time.perf_counter(), final, text.strip()))
         elif kind == "end_of_speech":
+            if self.pending_transcript is not None:
+                return
             if not self.busy and self.stream is not None:
                 received = time.perf_counter()
                 await self._finish_utterance(received, await self._safe(self.stream.flush()))
@@ -105,6 +120,8 @@ class VoiceConnection:
             await self.send({"type": "error", "content": "Expected string session_id (and optional user_id)"})
             return
         self.session_id = session_id.strip()
+        self.review_transcript = data.get("review_transcript") is True
+        self.pending_transcript = None
         self.user_id = user_id.strip() if user_id else None
         self.speak = bool(data.get("tts", True)) and self.tts is not None and self.tts.ready
         if self.stream is None:
@@ -146,11 +163,18 @@ class VoiceConnection:
         if not final.text.strip():
             await self.send({"type": "no_speech"})
             return
+        if self.review_transcript:
+            self.pending_transcript = final
+            await self.send({"type": "final_transcript", "text": final.text.strip() if final.text_is_formatted else normalize(final.text),
+                             "raw_text": final.text, "requires_confirmation": True,
+                             "asr_ms": round(final.finalize_ms, 1)})
+            return
         self.turn_task = asyncio.create_task(self._run_turn(detected_at, final))
 
-    async def _run_turn(self, detected_at: float, final: ASREvent) -> None:
+    async def _run_turn(self, detected_at: float, final: ASREvent, confirmed_text: Optional[str] = None) -> None:
         metrics = TurnMetrics(asr_endpoint_silence_ms=final.trailing_silence_ms, asr_finalize_ms=final.finalize_ms)
-        text = normalize(final.text)
+        text = confirmed_text if confirmed_text is not None else (
+            final.text.strip() if final.text_is_formatted else normalize(final.text))
         await self.send({"type": "final_transcript", "text": text, "raw_text": final.text,
                          "asr_ms": round(final.finalize_ms, 1)})
         logger.info("[%s] voice raw=%r normalized=%r", self.session_id[:8], final.text, text)

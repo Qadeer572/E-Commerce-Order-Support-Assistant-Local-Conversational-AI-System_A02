@@ -176,6 +176,7 @@ function generateUUID() {
 }
 
 function resetSession() {
+  cancelVoiceRecording();
   if (isStreaming) {
     showToast('Please wait for the current response to finish.', 'error');
     return;
@@ -279,6 +280,7 @@ function renderActiveHistoryItem() {
 }
 
 async function selectHistorySession(id) {
+  cancelVoiceRecording();
   if (id === sessionId) return;
   if (isStreaming) {
     showToast('Please wait for the current response to finish.', 'error');
@@ -446,6 +448,17 @@ function finishStreaming(disconnected = false) {
 // ── Send message ──────────────────────────────────────────────────────────────
 async function sendMessage(text) {
   if (!text.trim() || isStreaming) return;
+  if (voiceReviewPending) {
+    if (!voiceWs || voiceWs.readyState !== WebSocket.OPEN) {
+      showToast('Voice connection closed. Record again or cancel to send as text.', 'error');
+      return;
+    }
+    voiceReviewPending = false;
+    isStreaming = true;
+    enableInput(false);
+    voiceWs.send(JSON.stringify({ type: 'confirm_transcript', text }));
+    return;
+  }
   if (!ws || ws.readyState !== WebSocket.OPEN) {
     showToast('Not connected. Reconnecting…', 'error');
     connect();
@@ -854,6 +867,10 @@ let isRecording = false;
 let playbackContext = null;
 let nextStartTime = 0;
 let activeAudioSources = [];
+let voiceRecognizerReady = false;
+let pendingVoiceAudio = [];
+let pendingVoiceSamples = 0;
+let voiceReviewPending = false;
 
 async function toggleVoiceRecording() {
   if (isRecording) {
@@ -864,6 +881,7 @@ async function toggleVoiceRecording() {
 }
 
 async function startVoiceRecording() {
+  if (voiceReviewPending) cancelVoiceRecording();
   if (isStreaming) {
     showToast('Please wait for the current response to finish.', 'error');
     return;
@@ -874,28 +892,38 @@ async function startVoiceRecording() {
   }
 
   try {
-    micStream = await navigator.mediaDevices.getUserMedia({ audio: { channelCount: 1, sampleRate: 16000 } });
+    micStream = await navigator.mediaDevices.getUserMedia({ audio: {
+      channelCount: 1, sampleRate: 16000,
+      echoCancellation: true, noiseSuppression: true, autoGainControl: true,
+    } });
   } catch (err) {
     showToast('Microphone access was denied or is unavailable.', 'error');
     return;
   }
 
   isRecording = true;
+  voiceRecognizerReady = false;
+  pendingVoiceAudio = [];
+  pendingVoiceSamples = 0;
   if ($voiceBtn) $voiceBtn.classList.add('recording');
   if ($voiceBar) $voiceBar.style.display = 'flex';
-  if ($voiceStateText) $voiceStateText.textContent = 'Listening…';
-  if ($voiceTranscriptPreview) $voiceTranscriptPreview.textContent = 'Listening for speech…';
+  if ($voiceStateText) $voiceStateText.textContent = 'Connecting microphone…';
+  if ($voiceTranscriptPreview) $voiceTranscriptPreview.textContent = 'Wait for Listening before speaking.';
+  if ($voiceDoneBtn) $voiceDoneBtn.disabled = true;
   if ($voiceStopBtn) $voiceStopBtn.style.display = 'none';
 
-  const voiceWsUrl = `ws://${location.host}/ws/voice`;
+  const voiceWsUrl = `${location.protocol === 'https:' ? 'wss:' : 'ws:'}//${location.host}/ws/voice`;
   voiceWs = new WebSocket(voiceWsUrl);
+  const recordingSocket = voiceWs;
   voiceWs.binaryType = 'arraybuffer';
 
   voiceWs.onopen = () => {
-    voiceWs.send(JSON.stringify({ type: 'start', session_id: sessionId, tts: true }));
+    if (voiceWs !== recordingSocket) return;
+    voiceWs.send(JSON.stringify({ type: 'start', session_id: sessionId, tts: true, review_transcript: true }));
   };
 
   voiceWs.onmessage = (event) => {
+    if (voiceWs !== recordingSocket) return;
     if (typeof event.data === 'string') {
       try {
         const frame = JSON.parse(event.data);
@@ -911,17 +939,23 @@ async function startVoiceRecording() {
   };
 
   voiceWs.onclose = () => {
+    if (voiceWs !== recordingSocket) return;
     cleanupRecordingNodes();
+    if (voiceReviewPending) {
+      voiceReviewPending = false;
+      if ($voiceBar) $voiceBar.style.display = 'none';
+      showToast('Voice connection closed. You can send the reviewed message as text.', 'error');
+    }
   };
 
   try {
-    audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    audioContext = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 16000 });
     const source = audioContext.createMediaStreamSource(micStream);
     const bufferSize = 4096;
     scriptNode = audioContext.createScriptProcessor(bufferSize, 1, 1);
 
     scriptNode.onaudioprocess = (audioEvent) => {
-      if (!isRecording || !voiceWs || voiceWs.readyState !== WebSocket.OPEN) return;
+      if (!isRecording || !voiceWs || voiceWs.readyState > WebSocket.OPEN) return;
       const inputData = audioEvent.inputBuffer.getChannelData(0);
       const inputRate = audioContext.sampleRate;
       const targetRate = 16000;
@@ -949,7 +983,16 @@ async function startVoiceRecording() {
         pcm16[i] = s < 0 ? s * 0x8000 : s * 0x7FFF;
       }
 
-      voiceWs.send(pcm16.buffer);
+      if (voiceRecognizerReady) {
+        voiceWs.send(pcm16.buffer);
+      } else {
+        // Keep up to two seconds of initial speech until the recognizer acknowledges start.
+        pendingVoiceAudio.push(pcm16.buffer);
+        pendingVoiceSamples += pcm16.length;
+        while (pendingVoiceSamples > 32000 && pendingVoiceAudio.length > 1) {
+          pendingVoiceSamples -= pendingVoiceAudio.shift().byteLength / 2;
+        }
+      }
     };
 
     source.connect(scriptNode);
@@ -961,16 +1004,26 @@ async function startVoiceRecording() {
 }
 
 function finishVoiceSpeaking() {
+  if (!voiceRecognizerReady) return;
   if (voiceWs && voiceWs.readyState === WebSocket.OPEN) {
     voiceWs.send(JSON.stringify({ type: 'end_of_speech' }));
   }
   cleanupRecordingNodes();
-  if ($voiceBar) $voiceStateText.textContent = 'Processing…';
+  if ($voiceBar) $voiceStateText.textContent = 'Transcribing audio…';
+  if ($voiceTranscriptPreview) $voiceTranscriptPreview.textContent = 'Please wait for the final transcript.';
 }
 
 function cancelVoiceRecording() {
+  if (voiceReviewPending) {
+    $messageInput.value = '';
+    updateCharCount('');
+    $sendBtn.disabled = true;
+  }
+  voiceReviewPending = false;
+  if ($voiceDoneBtn) $voiceDoneBtn.style.display = '';
   if (voiceWs) {
     try { voiceWs.close(); } catch (e) {}
+    voiceWs = null;
   }
   cleanupRecordingNodes();
   if ($voiceBar) $voiceBar.style.display = 'none';
@@ -978,6 +1031,9 @@ function cancelVoiceRecording() {
 
 function cleanupRecordingNodes() {
   isRecording = false;
+  voiceRecognizerReady = false;
+  pendingVoiceAudio = [];
+  pendingVoiceSamples = 0;
   if ($voiceBtn) $voiceBtn.classList.remove('recording');
   if (scriptNode) {
     try { scriptNode.disconnect(); } catch (e) {}
@@ -997,12 +1053,36 @@ function handleVoiceFrame(frame) {
   const { type, content, text, data, name, ok, elapsed_ms } = frame;
 
   if (type === 'ready') {
+    voiceRecognizerReady = true;
+    if (voiceWs && voiceWs.readyState === WebSocket.OPEN) {
+      for (const pcm of pendingVoiceAudio) voiceWs.send(pcm);
+    }
+    pendingVoiceAudio = [];
+    pendingVoiceSamples = 0;
+    if ($voiceDoneBtn) $voiceDoneBtn.disabled = false;
     if ($voiceStateText) $voiceStateText.textContent = 'Listening…';
+    if ($voiceTranscriptPreview) $voiceTranscriptPreview.textContent = 'Speak now, then press Done.';
   } else if (type === 'partial_transcript') {
     if (text && $voiceTranscriptPreview) {
-      $voiceTranscriptPreview.textContent = `"${text}…"`;
+      // Vosk is used for speech activity, not the final Whisper draft.
+      $voiceTranscriptPreview.textContent = 'Speech detected. Keep speaking, or press Done.';
     }
   } else if (type === 'final_transcript') {
+    if (frame.requires_confirmation) {
+      cleanupRecordingNodes();
+      voiceReviewPending = true;
+      $messageInput.value = text;
+      $messageInput.style.height = 'auto';
+      $messageInput.style.height = Math.min($messageInput.scrollHeight, 160) + 'px';
+      updateCharCount(text);
+      enableInput(true);
+      if ($voiceStateText) $voiceStateText.textContent = 'Review voice text';
+      if ($voiceTranscriptPreview) $voiceTranscriptPreview.textContent = 'Edit the message below, then press Send.';
+      if ($voiceDoneBtn) $voiceDoneBtn.style.display = 'none';
+      return;
+    }
+    voiceReviewPending = false;
+    if ($voiceDoneBtn) $voiceDoneBtn.style.display = '';
     if ($voiceBar) $voiceBar.style.display = 'none';
     cleanupRecordingNodes();
     appendUserMessage(text, /* isVoice */ true);

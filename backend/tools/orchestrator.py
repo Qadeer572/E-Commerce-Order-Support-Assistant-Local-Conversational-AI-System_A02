@@ -99,6 +99,15 @@ class ToolOrchestrator:
         if not candidates:
             self.stats["no_gate"] += 1
             return None
+        direct_candidates = candidates if len(candidates) == 1 else []
+        for tool in direct_candidates:
+            arguments = tool.direct_arguments(text, ctx)
+            if arguments is not None:
+                validated = tool.args_model.model_validate(arguments)
+                result = await self._execute(tool, validated, ctx)
+                self.stats['direct'] += 1
+                return ToolOutcome(tool.name, validated.model_dump(exclude_none=True), result,
+                                   gate_ms=gate_ms, exec_ms=result.elapsed_ms, source='direct')
         decision_started = time.perf_counter()
         status, picked = await self._decide(text, candidates, ctx)
         decision_ms = (time.perf_counter() - decision_started) * 1000

@@ -14,13 +14,14 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 from backend.config import ASR_MODEL_DIR, MODEL_DIR  # noqa: E402
+from backend.config import ASR_FINAL_ENABLED, ASR_FINAL_MODEL_DIR  # noqa: E402
 
-VOSK_NAME = "vosk-model-small-en-us-0.15"
+VOSK_NAME = "vosk-model-en-us-0.22-lgraph"
 VOSK_URL = f"https://alphacephei.com/vosk/models/{VOSK_NAME}.zip"
 PIPER_BASE = "https://huggingface.co/rhasspy/piper-voices/resolve/main/en/en_US/lessac/medium/"
 # Sizes come from HTTP HEAD checks; the .onnx SHA-256 is Hugging Face's X-Linked-ETag.
 DOWNLOADS = [
-    {"name": f"{VOSK_NAME}.zip", "url": VOSK_URL, "size": 41205931, "sha256": None,
+    {"name": f"{VOSK_NAME}.zip", "url": VOSK_URL, "size": 130557655, "sha256": None,
      "dest": MODEL_DIR / f"{VOSK_NAME}.zip"},
     {"name": "en_US-lessac-medium.onnx", "url": PIPER_BASE + "en_US-lessac-medium.onnx", "size": 63201294,
      "sha256": "5efe09e69902187827af646e1a6e9d269dee769f9877d17b16b1b46eeaaf019f",
@@ -29,6 +30,8 @@ DOWNLOADS = [
      "sha256": None, "dest": MODEL_DIR / "piper" / "en_US-lessac-medium.onnx.json"},
 ]
 MANIFEST = MODEL_DIR / "voice_manifest.json"
+WHISPER_REPO = "Systran/faster-whisper-small.en"
+WHISPER_REVISION = "d1d751a5f8271d482d14ca55d9e2deeebbae577f"
 
 
 def sha256_of(path: Path) -> str:
@@ -76,6 +79,15 @@ def main() -> None:
         print(f"Extracting {VOSK_NAME}")
         with zipfile.ZipFile(MODEL_DIR / f"{VOSK_NAME}.zip") as archive:
             archive.extractall(MODEL_DIR)
+    if ASR_FINAL_ENABLED:
+        from huggingface_hub import snapshot_download
+        snapshot_download(WHISPER_REPO, revision=WHISPER_REVISION,
+            local_dir=ASR_FINAL_MODEL_DIR,
+            allow_patterns=["config.json", "model.bin", "tokenizer.json", "vocabulary.txt"])
+        manifest["final_asr"] = {"repo": WHISPER_REPO, "revision": WHISPER_REVISION,
+            "files": {name: {"size": (ASR_FINAL_MODEL_DIR / name).stat().st_size,
+                             "sha256": sha256_of(ASR_FINAL_MODEL_DIR / name)}
+                      for name in ("config.json", "model.bin", "tokenizer.json", "vocabulary.txt")}}
     manifest["prepared_on"] = date.today().isoformat()
     MANIFEST.write_text(json.dumps(manifest, indent=2), encoding="utf-8")
     print(f"Wrote {MANIFEST}")

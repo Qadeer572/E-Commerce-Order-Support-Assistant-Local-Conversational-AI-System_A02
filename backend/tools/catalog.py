@@ -11,9 +11,20 @@ from backend.config import SHOP_DB_FILE
 from .base import Tool, ToolContext, ToolResult
 
 CATEGORIES = ("Accessories", "Apparel", "Books", "Electronics", "Home", "Sports")
+_CATEGORY_ALIASES = {'home goods': 'Home', 'home and kitchen': 'Home',
+                     'sports equipment': 'Sports', 'clothing': 'Apparel',
+                     **{category.lower(): category for category in CATEGORIES}}
 _STOPWORDS = {"the", "a", "an", "is", "are", "in", "of", "for", "still", "any", "do", "you", "have",
               "stock", "available", "price", "how", "many", "left", "much", "does", "cost", "what",
               "show", "me", "your", "it", "there", "color", "colour", "colors", "and", "to", "with"}
+_BROWSE_WORDS = {'please', 'provide', 'give', 'tell', 'list', 'all', 'products', 'product', 'items', 'item',
+                 'store', 'shop', 'catalog', 'catalogue', 'currently', 'current', 'that', 'this', 'i',
+                 'am', 'telling', 'want', 'need', 'can', 'could', 'would', 'now', 'only', 'options',
+                 'cheap', 'cheapest', 'affordable', 'budget', 'inexpensive', 'sorted', 'sort', 'by',
+                 'ascending', 'descending', 'first', 'most', 'expensive', 'highest', 'lowest'}
+_BROWSE_WORDS.update({'recommend', 'suggest', 'something', 'buy', 'purchase', 'sell', 'carry',
+                      'offer', 'offering', 'selection', 'range', 'option', 'some', 'priced',
+                      'costing', 'full', 'complete', 'entire', 'at', 'here', 'our', 'right'})
 _SORTS = {"price_asc": "price ASC", "price_desc": "price DESC", "name": "name ASC"}
 
 
@@ -21,11 +32,13 @@ class CatalogArgs(BaseModel):
     query: Optional[str] = Field(default=None, max_length=80, description="Product name or keywords")
     sku: Optional[str] = Field(default=None, pattern=r"^[A-Z]{3,5}-\d{3}$", description="Exact SKU")
     category: Optional[Literal["Accessories", "Apparel", "Books", "Electronics", "Home", "Sports"]] = None
+    categories: list[Literal["Accessories", "Apparel", "Books", "Electronics", "Home", "Sports"]] = Field(default_factory=list, max_length=6)
     min_price: Optional[float] = Field(default=None, ge=0)
     max_price: Optional[float] = Field(default=None, ge=0)
     in_stock_only: bool = False
+    out_of_stock_only: bool = False
     sort: Literal["price_asc", "price_desc", "name"] = "price_asc"
-    limit: int = Field(default=5, ge=1, le=10)
+    limit: int = Field(default=5, ge=1, le=20)
 
 
 def _keywords(query: str) -> list[str]:
@@ -44,6 +57,9 @@ def search(args: CatalogArgs, db_path: Path) -> list[dict]:
     if args.category:
         clauses.append("category = ?")
         params.append(args.category)
+    if args.categories:
+        clauses.append('category IN (' + ','.join('?' for _ in args.categories) + ')')
+        params.extend(args.categories)
     if args.min_price is not None:
         clauses.append("price >= ?")
         params.append(args.min_price)
@@ -52,6 +68,8 @@ def search(args: CatalogArgs, db_path: Path) -> list[dict]:
         params.append(args.max_price)
     if args.in_stock_only:
         clauses.append("stock > 0")
+    if args.out_of_stock_only:
+        clauses.append("stock <= 0")
     search_text = args.query if (not sku_match and args.query) else ""
     for word in _keywords(search_text):
         clauses.append("(sku LIKE ? ESCAPE '\\' OR name LIKE ? ESCAPE '\\' OR category LIKE ? ESCAPE '\\' OR description LIKE ? ESCAPE '\\')")
@@ -93,7 +111,66 @@ class CatalogTool(Tool):
     def __init__(self, db_path: Path = SHOP_DB_FILE):
         self.db_path = Path(db_path)
 
+    def gate(self, text: str) -> bool:
+        from backend.conversation_manager.intent_triage import detect_intent, is_catalog_request
+        return detect_intent(text) == 'PRODUCT_QUERY' and (super().gate(text) or is_catalog_request(text))
+
+    def direct_arguments(self, text: str, ctx: ToolContext) -> Optional[dict]:
+        from backend.conversation_manager.intent_triage import detect_intent, is_catalog_request, normalize_shopping_text
+        text = normalize_shopping_text(text)
+        if detect_intent(text) != 'PRODUCT_QUERY':
+            return None
+        sku = re.search(r'\b([a-z]{3,5}-\d{3})\b', text)
+        if not sku and not is_catalog_request(text):
+            return None
+        unavailable = re.search(r'\b(?:not in stock|out of stock|sold out|unavailable)\b', text)
+        args = {'limit': 1 if sku else 20,
+                'in_stock_only': not sku and not unavailable and bool(re.search(r'\b(?:available|in stock)\b', text)),
+                'out_of_stock_only': bool(unavailable)}
+        if sku:
+            args['sku'] = sku[1].upper()
+        under = re.search(r'\b(?:under|below|less than|up to|at most)\s*\$?(\d+(?:\.\d+)?)', text)
+        over = re.search(r'\b(?:over|above|more than|at least)\s*\$?(\d+(?:\.\d+)?)', text)
+        price_range = re.search(r'\bbetween\s*\$?(\d+(?:\.\d+)?)\s+and\s*\$?(\d+(?:\.\d+)?)', text)
+        if price_range:
+            args['min_price'], args['max_price'] = float(price_range[1]), float(price_range[2])
+        if under:
+            args['max_price'] = float(under[1])
+        if over:
+            args['min_price'] = float(over[1])
+        category_matches, categories = [], []
+        for alias, category in _CATEGORY_ALIASES.items():
+            category_match = re.search(r'\b' + re.escape(alias) + r'\b', text)
+            if category_match:
+                category_matches.append(category_match)
+                if category not in categories:
+                    categories.append(category)
+        if len(categories) == 1:
+            args['category'] = categories[0]
+        elif categories:
+            args['categories'] = categories
+        if re.search(r'\b(?:most expensive|highest price|price descending)\b', text):
+            args['sort'] = 'price_desc'
+        if re.search(r'\bcheapest\b', text):
+            args['limit'] = 1
+        explicit_limit = re.search(r'\b(?:top|first|show|list)\s+(\d+)\b', text)
+        if explicit_limit:
+            args['limit'] = min(20, max(1, int(explicit_limit[1])))
+        query = text
+        for match in (under, over, price_range, explicit_limit, sku, unavailable, *category_matches):
+            if match:
+                query = query.replace(match[0], ' ')
+        words = [word for word in re.findall(r'[a-z0-9]+', query)
+                 if word not in _STOPWORDS and word not in _BROWSE_WORDS
+                 and word not in {category.lower() for category in CATEGORIES}]
+        if words:
+            args['query'] = ' '.join(words)[:80]
+        return args
+
     def fallback_arguments(self, text: str, ctx: ToolContext) -> Optional[dict]:
+        direct = self.direct_arguments(text, ctx)
+        if direct is not None:
+            return direct
         args: dict = {}
         sku = re.search(r"\b([A-Z]{3,5}-\d{3})\b", text.upper())
         if sku:
@@ -116,3 +193,22 @@ class CatalogTool(Tool):
         if not rows:
             return ToolResult(ok=True, data={"count": 0, "products": [], "note": "No matching products."})
         return ToolResult(ok=True, data={"count": len(rows), "products": rows})
+
+
+def render_catalog_result(result: ToolResult) -> str:
+    """Render live facts directly so generation cannot contradict a successful lookup."""
+    if not result.ok:
+        return result.user_message or 'The catalog lookup failed. Please try again shortly.'
+    products = result.data.get('products', [])
+    if not products:
+        return "I couldn't find matching products in the live store catalog. Try a product name, category, or different budget."
+    lines = ['Here are the matching products in our store:', '']
+    for product in products:
+        stock = int(product['total_stock'])
+        availability = f'In stock: {stock}' if stock > 0 else 'Out of stock'
+        lines.append(f"- {product['name']} ({product['sku']}) — ${product['price']:.2f} | {availability}")
+    if len(products) == 1 and products[0].get('variants'):
+        lines += ['', 'Variants:']
+        lines += [f"- {variant['label']}: {variant['stock']} in stock" for variant in products[0]['variants']]
+    lines += ['', 'Source: live store catalog.']
+    return '\n'.join(lines)

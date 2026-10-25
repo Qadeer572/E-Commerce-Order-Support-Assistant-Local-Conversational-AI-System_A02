@@ -90,6 +90,7 @@ _SOCIAL_PATTERNS = [
 
 # Generic attributes (price, size, color) need an actual shopping reference.
 _PRODUCT_REFERENCES = [
+    r'\b[a-z]{3,5}-\d{3}\b',
     r'\b(?:products?|items?|catalog|electronics|apparel|home goods|sports equipment)\b',
     r'\b(?:earbuds?|headphones?|speakers?|chargers?|webcam|tablet|laptop|phone)\b',
     r'\b(?:jacket|shirt|shorts|clothing|yoga|mat|dumbbells?|weights?)\b',
@@ -104,6 +105,7 @@ def normalize_shopping_text(text: str) -> str:
     """Correct common catalog typos without rewriting arbitrary user content."""
     text = re.sub(r'\b(?:prodcut|prouduct|produt)(s)?\b',
                   lambda m: 'products' if m[1] else 'product', text.lower())
+    text = re.sub(r'\b(?:availanle|availble|avaliable|availabe)\b', 'available', text)
     return re.sub(r'\blist (?:if|of) products?\b', 'list of products', text)
 
 
@@ -114,6 +116,7 @@ def is_catalog_request(text: str) -> bool:
         r'|\b(?:list|browse|all|selection|range)\b.*\b(?:products?|items?)\b'
         r'|\b(?:show|recommend|suggest)\b.*\b(?:products?|items?|something|options)\b'
         r'|\b(?:under|below|less than)\s*\$?\d+'
+        r'|\b(?:what|which)\b.*\b(?:products|items)\b.*\b(?:available|in stock|have|sell|carry|offer)\b'
         r'|\bwhat (?:do you sell|can i buy|products do you have)\b', text))
 
 

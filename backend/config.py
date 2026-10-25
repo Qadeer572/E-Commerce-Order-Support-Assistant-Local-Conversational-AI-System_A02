@@ -59,8 +59,13 @@ def _flag(name: str, default: str) -> bool:
 
 
 VOICE_ENABLED = _flag("SHOPBOT_VOICE_ENABLED", "1")
-ASR_MODEL_DIR = Path(os.getenv("SHOPBOT_ASR_MODEL_DIR", str(MODEL_DIR / "vosk-model-small-en-us-0.15")))
+ASR_MODEL_DIR = Path(os.getenv("SHOPBOT_ASR_MODEL_DIR", str(MODEL_DIR / "vosk-model-en-us-0.22-lgraph")))
 ASR_SAMPLE_RATE = 16000
+ASR_FINAL_ENABLED = _flag("SHOPBOT_ASR_FINAL_ENABLED", "1")
+ASR_FINAL_MODEL_DIR = Path(os.getenv("SHOPBOT_ASR_FINAL_MODEL_DIR", str(MODEL_DIR / "whisper-small.en")))
+ASR_FINAL_THREADS = int(os.getenv("SHOPBOT_ASR_FINAL_THREADS", "2"))
+ASR_HOTWORDS = os.getenv("SHOPBOT_ASR_HOTWORDS", "").strip()
+ASR_DIAGNOSTIC_CAPTURE = _flag("SHOPBOT_ASR_DIAGNOSTIC_CAPTURE", "0")
 # Trailing silence (ms) after which the Vosk endpointer ends an utterance.
 ASR_ENDPOINT_SILENCE_MS = int(os.getenv("SHOPBOT_ASR_ENDPOINT_MS", "600"))
 ASR_MAX_JOBS = int(os.getenv("SHOPBOT_ASR_MAX_JOBS", "2"))

@@ -64,6 +64,33 @@ def test_voice_missing_assets_clean_error(monkeypatch, tmp_path):
         assert "Voice models are not installed" in frame["content"]
 
 
+def test_voice_review_uses_only_confirmed_text(monkeypatch, tmp_path):
+    c = voice_client(monkeypatch, tmp_path)
+    with c.websocket_connect('/ws/voice') as ws:
+        ws.send_json(dict(type='start', session_id='review', tts=False, review_transcript=True))
+        assert ws.receive_json()['type'] == 'ready'
+        ws.send_bytes(b'\x00\x00' * 1600)
+        assert ws.receive_json()['type'] == 'partial_transcript'
+        ws.send_bytes(b'\x00\x00' * 1600)
+        preview = ws.receive_json()
+        assert preview['type'] == 'final_transcript'
+        assert preview.get('requires_confirmation') is True
+        assert main._session_store.get('review') is None
+        for invalid in ['', ' ' * 3, 'x' * 2001, 12]:
+            ws.send_json(dict(type='confirm_transcript', text=invalid))
+            assert ws.receive_json()['type'] == 'error'
+            assert main._session_store.get('review') is None
+        ws.send_json(dict(type='confirm_transcript', text='My name is Qadeer Raza'))
+        assert ws.receive_json()['text'] == 'My name is Qadeer Raza'
+        while ws.receive_json()['type'] != 'metrics':
+            pass
+        session = main._session_store.get('review')
+        assert session.history[0].content == 'My name is Qadeer Raza'
+        ws.send_json(dict(type='confirm_transcript', text='Duplicate'))
+        assert ws.receive_json()['type'] == 'error'
+        assert len(session.history) == 2
+
+
 def test_voice_full_pipeline(monkeypatch, tmp_path):
     c = voice_client(monkeypatch, tmp_path)
     with c.websocket_connect("/ws/voice") as ws:
@@ -98,6 +125,20 @@ def test_voice_full_pipeline(monkeypatch, tmp_path):
         assert "done" in types
         assert "audio_end" in types
         assert frames[-1]["type"] == "metrics"
+
+
+def test_formatted_transcript_keeps_name_spelling_and_punctuation(monkeypatch, tmp_path):
+    async def formatted(self, chunk):
+        return [ASREvent('final', 'My name is Qadeer Raza.', text_is_formatted=True)]
+    monkeypatch.setattr(FakeASRStream, 'accept', formatted)
+    c = voice_client(monkeypatch, tmp_path)
+    with c.websocket_connect('/ws/voice') as ws:
+        ws.send_json(dict(type='start', session_id='formatted', review_transcript=True))
+        assert ws.receive_json()['type'] == 'ready'
+        ws.send_bytes(b'\0\0' * 1600)
+        preview = ws.receive_json()
+        assert preview['text'] == 'My name is Qadeer Raza.'
+        assert preview['requires_confirmation'] is True
 
 
 def test_chat_and_voice_shared_session_history(monkeypatch, tmp_path):

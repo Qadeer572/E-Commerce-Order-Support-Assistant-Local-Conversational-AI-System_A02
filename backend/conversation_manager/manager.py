@@ -19,6 +19,7 @@ from backend.llm_engine import LLMEngineError
 from backend.metrics import TurnMetrics
 from backend.crm_store import welcome_line
 from backend.tools.base import ToolContext, ToolOutcome
+from backend.tools.catalog import render_catalog_result
 
 logger = logging.getLogger("shopbot.manager")
 
@@ -65,11 +66,15 @@ def has_conflicting_facts(hits):
         if not entity:
             continue
         fields = re.findall(r"(?im)^(price|stock|status|total)\s*:\s*([^\n]+)", hit.text)
-        fields += [("price", amount) for amount in re.findall(r"(?i)\bprice(?: is)?\s*:?\s*\$(\d+(?:\.\d{1,2})?)", hit.text)]
+        if hit.order_id:
+            # Different items in one order legitimately have different unit prices.
+            fields = [(field, value) for field, value in fields if field.lower() in ('status', 'total')]
+        else:
+            fields += [("price", amount) for amount in re.findall(r"(?i)\bprice(?: is)?\s*:?\s*\$(\d+(?:\.\d{1,2})?)", hit.text)]
         for field, value in fields:
             field = field.lower()
             value = value.strip().lower()
-            if field == "price":
+            if field in ("price", "total"):
                 number = re.fullmatch(r"\$?(\d+(?:\.\d+)?)", value)
                 if number:
                     value = str(float(number[1]))
@@ -144,10 +149,13 @@ class ConversationManager:
         except Exception:
             logger.exception("Could not record CRM interaction")
 
-    async def _run_tools(self, user_message, state, ctx, metrics, on_event):
+    async def _run_tools(self, user_message, state, ctx, metrics, on_event, session):
         if not self.tools or state.intent == "CLOSING":
             return
-        outcome = await self.tools.run(user_message, ctx)
+        tool_question = user_message
+        if state.intent == 'PRODUCT_QUERY' and session.last_sku and is_entity_followup(user_message):
+            tool_question = f'{session.last_sku} {user_message}'
+        outcome = await self.tools.run(tool_question, ctx)
         if outcome is None:
             return
         state.outcome = outcome
@@ -172,8 +180,19 @@ class ConversationManager:
     async def _respond(self, session, user_message, state, ctx, metrics, on_event, profile):
         intent = state.intent
         # Tools run BEFORE the out-of-scope redirect so "what is 15% off 49.99" is not refused.
-        await self._run_tools(user_message, state, ctx, metrics, on_event)
+        await self._run_tools(user_message, state, ctx, metrics, on_event, session)
         outcome = state.outcome
+        if outcome and outcome.name == 'catalog_query':
+            state.intent = session.active_intent = 'PRODUCT_QUERY'
+            products = outcome.result.data.get('products', []) if outcome.result.ok else []
+            if outcome.result.ok:
+                session.last_sku = products[0]['sku'] if len(products) == 1 else None
+            reply = render_catalog_result(outcome.result)
+            session.add_turn('user', user_message)
+            session.add_turn('assistant', reply)
+            for line in reply.splitlines(keepends=True):
+                yield line
+            return
         order_id = extract_order_id(user_message)
         if intent == "ORDER_TRACKING":
             if order_id:

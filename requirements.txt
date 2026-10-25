@@ -21,3 +21,9 @@ sentence-transformers==3.4.1
 transformers==4.48.3
 torch==2.6.0
 chromadb==1.0.20
+
+# Verified retrieval dependency and offline voice support
+scikit-learn==1.6.1
+vosk==0.3.45
+piper-tts==1.8.0
+faster-whisper==1.2.1

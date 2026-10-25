@@ -48,7 +48,7 @@ class ToolOutcome:
     gate_ms: float = 0.0
     decision_ms: float = 0.0
     exec_ms: float = 0.0
-    source: str = "llm"  # "llm" or "fallback"
+    source: str = "llm"  # "llm", "direct", or "fallback"
 
     @property
     def total_ms(self) -> float:
@@ -90,6 +90,10 @@ class Tool:
 
     def fallback_arguments(self, text: str, ctx: ToolContext) -> Optional[dict]:
         """Deterministic extraction used only when the LLM decision is unusable."""
+        return None
+
+    def direct_arguments(self, text: str, ctx: ToolContext) -> Optional[dict]:
+        """Parse unambiguous requests without an LLM decision."""
         return None
 
     async def run(self, args: BaseModel, ctx: ToolContext) -> ToolResult:
